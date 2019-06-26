@@ -62,17 +62,18 @@ def is_kv(kv_str):
 
 
 class Client(object):
-    &#34;&#34;&#34;API Client object for bulk_importer for app and model requests
-    &#34;&#34;&#34;
     app_api_urls = None
-    &#34;&#34;&#34;Dict of Bulk Importer apps&#34;&#34;&#34;
+    &#34;&#34;&#34;Dict of Bulk Importer app urls. Updated with the initialization of a
+    AppAPI object&#34;&#34;&#34;
     model_api_urls = {}
-    &#34;&#34;&#34;Dict of Bulk Importer models&#34;&#34;&#34;
+    &#34;&#34;&#34;Dict of Bulk Importer model urls. Updated with the initialization of a
+    ModelAPI object&#34;&#34;&#34;
 
     def __init__(self,
                  token,
                  api_url=&#39;https://data-warehouse.pivot/bulk/pandas_views/&#39;):
-        &#34;&#34;&#34;Base Client class to handle bulk_importer API requests
+        &#34;&#34;&#34;API Client object for bulk_importer to handle app and model requests.
+        Requies a user token with access to data-warehouse
 
         Args:
             token (str): user token with permissions to access the API
@@ -82,10 +83,12 @@ class Client(object):
         self.token = token
         self.api_url = api_url
         self.temp_dir = os.path.join(gettempdir(), &#39;bulk-api-cache&#39;)
+        &#34;&#34;&#34;Temp directory to host files created by the client&#34;&#34;&#34;
         os.makedirs(self.temp_dir, exist_ok=True)
 
     def request(self, method, url, params, ):
-        &#34;&#34;&#34;Request function to construct and send a request
+        &#34;&#34;&#34;Request function to construct and send a request. Uses the Requests
+        python library
 
         Args:
             method (str): method for the request
@@ -112,7 +115,7 @@ class Client(object):
         return response
 
     def clear_cache(self):
-        &#34;&#34;&#34;Empty the temp directory&#34;&#34;&#34;
+        &#34;&#34;&#34;Empty the temp directory for a clean working directory&#34;&#34;&#34;
 
         if os.path.exists(self.temp_dir):
             for path in os.listdir(self.temp_dir):
@@ -136,11 +139,11 @@ class Client(object):
 
 
 class AppAPI(object):
-    &#34;&#34;&#34;Object to handle calls to APIRootView
-    &#34;&#34;&#34;
 
     def __init__(self, client, app_label,):
-        &#34;&#34;&#34;App obj to create requests to the bulk_importer API apps
+        &#34;&#34;&#34;App object. Given a app label, this object makes a request — using
+        the Client class — to the Bulk Importer API. If given a app in Bulk
+        Importer, the response cached in app_api_urls dictionary.
 
         Args:
             client (obj): client obj for requests
@@ -163,7 +166,7 @@ class AppAPI(object):
         &#34;&#34;&#34;Creates a ModelAPI object from a given model name
 
         Args:
-            model_name (str): model name of the desired model of an app
+            model_name (str): model name of the desired model
 
         Returns:
             ModelAPI obj
@@ -173,11 +176,12 @@ class AppAPI(object):
 
 
 class ModelAPI(object):
-    &#34;&#34;&#34;Object to handle calls to APIAppView
-    &#34;&#34;&#34;
 
     def __init__(self, app_api, model_name):
-        &#34;&#34;&#34;Model obj to create requests to the bulk_importer API app models
+        &#34;&#34;&#34;Model object. Given a model name, this object makes a request — using
+        the Client class — to the Bulk Importer API. If given a model in the
+        previously specified app, the response is cached in model_api_urls
+        dictionary.
 
         Args:
             app_api (obj): AppAPI object
@@ -200,16 +204,48 @@ class ModelAPI(object):
             raise BulkAPIError({&#39;model_api&#39;:
                                 &#34;Model does not exist in bulk api&#34;})
 
-    def query(self, fields=None, filter=None, order=None, page=None,
-              page_size=None):
-        &#34;&#34;&#34;Query for bulk_importer PandasView to create a pandas DataFrame
+    def query(self, fields=None, filter=None, order=None, page_size=None):
+        &#34;&#34;&#34;Queries to create a Pandas DataFrame for given queryset. The default
+        query may be obtained by calling the function, without passing
+        any parameters.
 
         Args:
             fields (list): list of specified fields for the fields query
             filter (str): filter for the filter query
             order (str): order for the ordering query
-            page (str): page number for the page query
-            page_size (str): page size for the page_size query
+            page_size (str): page size for the page_size query; Default: 10,000
+
+        Returns:
+            pandas dataframe
+
+        &#34;&#34;&#34;
+        dataframes = []
+        current_page = 1
+        pages_left = 1
+        while pages_left &gt; 0:
+            df, pages_left = self.query_request(
+                fields=fields,
+                filter=filter,
+                order=order,
+                page=current_page,
+                page_size=page_size
+            )
+            current_page += 1
+            dataframes.append(df)
+        return pandas.concat(dataframes)
+
+    def query_request(self, fields=None, filter=None, order=None, page=None,
+                      page_size=None):
+        &#34;&#34;&#34;Queries to create a Pandas DataFrame for given queryset. The default
+        query may be obtained by calling the function, without passing
+        any parameters.
+
+        Args:
+            fields (list): list of specified fields for the fields query
+            filter (str): filter for the filter query
+            order (str): order for the ordering query
+            page (str): page number for the page query; Default: 1
+            page_size (str): page size for the page_size query; Default: 10,000
 
         Returns:
             pandas dataframe
@@ -248,6 +284,8 @@ class ModelAPI(object):
         csv_path = os.path.join(path, query_hash)
         if not os.path.exists(csv_path):
             with self.app.client.request(&#39;GET&#39;, url, params=params) as response:
+                pages_left = response.headers[&#39;page_count&#39;] - response.headers[
+                    &#39;current_page&#39;]
                 with open(csv_path, &#39;wb&#39;) as f:
                     shutil.copyfileobj(response.raw, f)
 
@@ -258,7 +296,7 @@ class ModelAPI(object):
             ),
             ignore_index=True)
 
-        return df</code></pre>
+        return df, pages_left</code></pre>
 </details>
 </section>
 <section>
@@ -307,8 +345,9 @@ class ModelAPI(object):
 <span>(</span><span>client, app_label)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Object to handle calls to APIRootView</p>
-<p>App obj to create requests to the bulk_importer API apps</p>
+<section class="desc"><p>App object. Given a app label, this object makes a request — using
+the Client class — to the Bulk Importer API. If given a app in Bulk
+Importer, the response cached in app_api_urls dictionary.</p>
 <h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>client</code></strong> :&ensp;<code>obj</code></dt>
@@ -319,11 +358,11 @@ class ModelAPI(object):
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">class AppAPI(object):
-    &#34;&#34;&#34;Object to handle calls to APIRootView
-    &#34;&#34;&#34;
 
     def __init__(self, client, app_label,):
-        &#34;&#34;&#34;App obj to create requests to the bulk_importer API apps
+        &#34;&#34;&#34;App object. Given a app label, this object makes a request — using
+        the Client class — to the Bulk Importer API. If given a app in Bulk
+        Importer, the response cached in app_api_urls dictionary.
 
         Args:
             client (obj): client obj for requests
@@ -346,7 +385,7 @@ class ModelAPI(object):
         &#34;&#34;&#34;Creates a ModelAPI object from a given model name
 
         Args:
-            model_name (str): model name of the desired model of an app
+            model_name (str): model name of the desired model
 
         Returns:
             ModelAPI obj
@@ -364,7 +403,7 @@ class ModelAPI(object):
 <h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>model_name</code></strong> :&ensp;<code>str</code></dt>
-<dd>model name of the desired model of an app</dd>
+<dd>model name of the desired model</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
@@ -377,7 +416,7 @@ class ModelAPI(object):
     &#34;&#34;&#34;Creates a ModelAPI object from a given model name
 
     Args:
-        model_name (str): model name of the desired model of an app
+        model_name (str): model name of the desired model
 
     Returns:
         ModelAPI obj
@@ -410,8 +449,8 @@ class ModelAPI(object):
 <span>(</span><span>token, api_url='https://data-warehouse.pivot/bulk/pandas_views/')</span>
 </code></dt>
 <dd>
-<section class="desc"><p>API Client object for bulk_importer for app and model requests</p>
-<p>Base Client class to handle bulk_importer API requests</p>
+<section class="desc"><p>API Client object for bulk_importer to handle app and model requests.
+Requies a user token with access to data-warehouse</p>
 <h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>token</code></strong> :&ensp;<code>str</code></dt>
@@ -422,17 +461,18 @@ class ModelAPI(object):
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">class Client(object):
-    &#34;&#34;&#34;API Client object for bulk_importer for app and model requests
-    &#34;&#34;&#34;
     app_api_urls = None
-    &#34;&#34;&#34;Dict of Bulk Importer apps&#34;&#34;&#34;
+    &#34;&#34;&#34;Dict of Bulk Importer app urls. Updated with the initialization of a
+    AppAPI object&#34;&#34;&#34;
     model_api_urls = {}
-    &#34;&#34;&#34;Dict of Bulk Importer models&#34;&#34;&#34;
+    &#34;&#34;&#34;Dict of Bulk Importer model urls. Updated with the initialization of a
+    ModelAPI object&#34;&#34;&#34;
 
     def __init__(self,
                  token,
                  api_url=&#39;https://data-warehouse.pivot/bulk/pandas_views/&#39;):
-        &#34;&#34;&#34;Base Client class to handle bulk_importer API requests
+        &#34;&#34;&#34;API Client object for bulk_importer to handle app and model requests.
+        Requies a user token with access to data-warehouse
 
         Args:
             token (str): user token with permissions to access the API
@@ -442,10 +482,12 @@ class ModelAPI(object):
         self.token = token
         self.api_url = api_url
         self.temp_dir = os.path.join(gettempdir(), &#39;bulk-api-cache&#39;)
+        &#34;&#34;&#34;Temp directory to host files created by the client&#34;&#34;&#34;
         os.makedirs(self.temp_dir, exist_ok=True)
 
     def request(self, method, url, params, ):
-        &#34;&#34;&#34;Request function to construct and send a request
+        &#34;&#34;&#34;Request function to construct and send a request. Uses the Requests
+        python library
 
         Args:
             method (str): method for the request
@@ -472,7 +514,7 @@ class ModelAPI(object):
         return response
 
     def clear_cache(self):
-        &#34;&#34;&#34;Empty the temp directory&#34;&#34;&#34;
+        &#34;&#34;&#34;Empty the temp directory for a clean working directory&#34;&#34;&#34;
 
         if os.path.exists(self.temp_dir):
             for path in os.listdir(self.temp_dir):
@@ -498,11 +540,20 @@ class ModelAPI(object):
 <dl>
 <dt id="bulk_api_client.Client.app_api_urls"><code class="name">var <span class="ident">app_api_urls</span></code></dt>
 <dd>
-<section class="desc"><p>Dict of Bulk Importer apps</p></section>
+<section class="desc"><p>Dict of Bulk Importer app urls. Updated with the initialization of a
+AppAPI object</p></section>
 </dd>
 <dt id="bulk_api_client.Client.model_api_urls"><code class="name">var <span class="ident">model_api_urls</span></code></dt>
 <dd>
-<section class="desc"><p>Dict of Bulk Importer models</p></section>
+<section class="desc"><p>Dict of Bulk Importer model urls. Updated with the initialization of a
+ModelAPI object</p></section>
+</dd>
+</dl>
+<h3>Instance variables</h3>
+<dl>
+<dt id="bulk_api_client.Client.temp_dir"><code class="name">var <span class="ident">temp_dir</span></code></dt>
+<dd>
+<section class="desc"><p>Temp directory to host files created by the client</p></section>
 </dd>
 </dl>
 <h3>Methods</h3>
@@ -541,11 +592,11 @@ class ModelAPI(object):
 <span>def <span class="ident">clear_cache</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Empty the temp directory</p></section>
+<section class="desc"><p>Empty the temp directory for a clean working directory</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def clear_cache(self):
-    &#34;&#34;&#34;Empty the temp directory&#34;&#34;&#34;
+    &#34;&#34;&#34;Empty the temp directory for a clean working directory&#34;&#34;&#34;
 
     if os.path.exists(self.temp_dir):
         for path in os.listdir(self.temp_dir):
@@ -560,7 +611,8 @@ class ModelAPI(object):
 <span>def <span class="ident">request</span></span>(<span>self, method, url, params)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Request function to construct and send a request</p>
+<section class="desc"><p>Request function to construct and send a request. Uses the Requests
+python library</p>
 <h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>method</code></strong> :&ensp;<code>str</code></dt>
@@ -579,7 +631,8 @@ class ModelAPI(object):
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def request(self, method, url, params, ):
-    &#34;&#34;&#34;Request function to construct and send a request
+    &#34;&#34;&#34;Request function to construct and send a request. Uses the Requests
+    python library
 
     Args:
         method (str): method for the request
@@ -613,8 +666,10 @@ class ModelAPI(object):
 <span>(</span><span>app_api, model_name)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Object to handle calls to APIAppView</p>
-<p>Model obj to create requests to the bulk_importer API app models</p>
+<section class="desc"><p>Model object. Given a model name, this object makes a request — using
+the Client class — to the Bulk Importer API. If given a model in the
+previously specified app, the response is cached in model_api_urls
+dictionary.</p>
 <h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>app_api</code></strong> :&ensp;<code>obj</code></dt>
@@ -625,11 +680,12 @@ class ModelAPI(object):
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">class ModelAPI(object):
-    &#34;&#34;&#34;Object to handle calls to APIAppView
-    &#34;&#34;&#34;
 
     def __init__(self, app_api, model_name):
-        &#34;&#34;&#34;Model obj to create requests to the bulk_importer API app models
+        &#34;&#34;&#34;Model object. Given a model name, this object makes a request — using
+        the Client class — to the Bulk Importer API. If given a model in the
+        previously specified app, the response is cached in model_api_urls
+        dictionary.
 
         Args:
             app_api (obj): AppAPI object
@@ -652,16 +708,48 @@ class ModelAPI(object):
             raise BulkAPIError({&#39;model_api&#39;:
                                 &#34;Model does not exist in bulk api&#34;})
 
-    def query(self, fields=None, filter=None, order=None, page=None,
-              page_size=None):
-        &#34;&#34;&#34;Query for bulk_importer PandasView to create a pandas DataFrame
+    def query(self, fields=None, filter=None, order=None, page_size=None):
+        &#34;&#34;&#34;Queries to create a Pandas DataFrame for given queryset. The default
+        query may be obtained by calling the function, without passing
+        any parameters.
 
         Args:
             fields (list): list of specified fields for the fields query
             filter (str): filter for the filter query
             order (str): order for the ordering query
-            page (str): page number for the page query
-            page_size (str): page size for the page_size query
+            page_size (str): page size for the page_size query; Default: 10,000
+
+        Returns:
+            pandas dataframe
+
+        &#34;&#34;&#34;
+        dataframes = []
+        current_page = 1
+        pages_left = 1
+        while pages_left &gt; 0:
+            df, pages_left = self.query_request(
+                fields=fields,
+                filter=filter,
+                order=order,
+                page=current_page,
+                page_size=page_size
+            )
+            current_page += 1
+            dataframes.append(df)
+        return pandas.concat(dataframes)
+
+    def query_request(self, fields=None, filter=None, order=None, page=None,
+                      page_size=None):
+        &#34;&#34;&#34;Queries to create a Pandas DataFrame for given queryset. The default
+        query may be obtained by calling the function, without passing
+        any parameters.
+
+        Args:
+            fields (list): list of specified fields for the fields query
+            filter (str): filter for the filter query
+            order (str): order for the ordering query
+            page (str): page number for the page query; Default: 1
+            page_size (str): page size for the page_size query; Default: 10,000
 
         Returns:
             pandas dataframe
@@ -700,6 +788,8 @@ class ModelAPI(object):
         csv_path = os.path.join(path, query_hash)
         if not os.path.exists(csv_path):
             with self.app.client.request(&#39;GET&#39;, url, params=params) as response:
+                pages_left = response.headers[&#39;page_count&#39;] - response.headers[
+                    &#39;current_page&#39;]
                 with open(csv_path, &#39;wb&#39;) as f:
                     shutil.copyfileobj(response.raw, f)
 
@@ -710,15 +800,73 @@ class ModelAPI(object):
             ),
             ignore_index=True)
 
-        return df</code></pre>
+        return df, pages_left</code></pre>
 </details>
 <h3>Methods</h3>
 <dl>
 <dt id="bulk_api_client.ModelAPI.query"><code class="name flex">
-<span>def <span class="ident">query</span></span>(<span>self, fields=None, filter=None, order=None, page=None, page_size=None)</span>
+<span>def <span class="ident">query</span></span>(<span>self, fields=None, filter=None, order=None, page_size=None)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Query for bulk_importer PandasView to create a pandas DataFrame</p>
+<section class="desc"><p>Queries to create a Pandas DataFrame for given queryset. The default
+query may be obtained by calling the function, without passing
+any parameters.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>fields</code></strong> :&ensp;<code>list</code></dt>
+<dd>list of specified fields for the fields query</dd>
+<dt><strong><code>filter</code></strong> :&ensp;<code>str</code></dt>
+<dd>filter for the filter query</dd>
+<dt><strong><code>order</code></strong> :&ensp;<code>str</code></dt>
+<dd>order for the ordering query</dd>
+<dt><strong><code>page_size</code></strong> :&ensp;<code>str</code></dt>
+<dd>page size for the page_size query; Default: 10,000</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>pandas</code> <code>dataframe</code></dt>
+<dd>&nbsp;</dd>
+</dl></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def query(self, fields=None, filter=None, order=None, page_size=None):
+    &#34;&#34;&#34;Queries to create a Pandas DataFrame for given queryset. The default
+    query may be obtained by calling the function, without passing
+    any parameters.
+
+    Args:
+        fields (list): list of specified fields for the fields query
+        filter (str): filter for the filter query
+        order (str): order for the ordering query
+        page_size (str): page size for the page_size query; Default: 10,000
+
+    Returns:
+        pandas dataframe
+
+    &#34;&#34;&#34;
+    dataframes = []
+    current_page = 1
+    pages_left = 1
+    while pages_left &gt; 0:
+        df, pages_left = self.query_request(
+            fields=fields,
+            filter=filter,
+            order=order,
+            page=current_page,
+            page_size=page_size
+        )
+        current_page += 1
+        dataframes.append(df)
+    return pandas.concat(dataframes)</code></pre>
+</details>
+</dd>
+<dt id="bulk_api_client.ModelAPI.query_request"><code class="name flex">
+<span>def <span class="ident">query_request</span></span>(<span>self, fields=None, filter=None, order=None, page=None, page_size=None)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Queries to create a Pandas DataFrame for given queryset. The default
+query may be obtained by calling the function, without passing
+any parameters.</p>
 <h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>fields</code></strong> :&ensp;<code>list</code></dt>
@@ -728,9 +876,9 @@ class ModelAPI(object):
 <dt><strong><code>order</code></strong> :&ensp;<code>str</code></dt>
 <dd>order for the ordering query</dd>
 <dt><strong><code>page</code></strong> :&ensp;<code>str</code></dt>
-<dd>page number for the page query</dd>
+<dd>page number for the page query; Default: 1</dd>
 <dt><strong><code>page_size</code></strong> :&ensp;<code>str</code></dt>
-<dd>page size for the page_size query</dd>
+<dd>page size for the page_size query; Default: 10,000</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
@@ -739,16 +887,18 @@ class ModelAPI(object):
 </dl></section>
 <details class="source">
 <summary>Source code</summary>
-<pre><code class="python">def query(self, fields=None, filter=None, order=None, page=None,
-          page_size=None):
-    &#34;&#34;&#34;Query for bulk_importer PandasView to create a pandas DataFrame
+<pre><code class="python">def query_request(self, fields=None, filter=None, order=None, page=None,
+                  page_size=None):
+    &#34;&#34;&#34;Queries to create a Pandas DataFrame for given queryset. The default
+    query may be obtained by calling the function, without passing
+    any parameters.
 
     Args:
         fields (list): list of specified fields for the fields query
         filter (str): filter for the filter query
         order (str): order for the ordering query
-        page (str): page number for the page query
-        page_size (str): page size for the page_size query
+        page (str): page number for the page query; Default: 1
+        page_size (str): page size for the page_size query; Default: 10,000
 
     Returns:
         pandas dataframe
@@ -787,6 +937,8 @@ class ModelAPI(object):
     csv_path = os.path.join(path, query_hash)
     if not os.path.exists(csv_path):
         with self.app.client.request(&#39;GET&#39;, url, params=params) as response:
+            pages_left = response.headers[&#39;page_count&#39;] - response.headers[
+                &#39;current_page&#39;]
             with open(csv_path, &#39;wb&#39;) as f:
                 shutil.copyfileobj(response.raw, f)
 
@@ -797,7 +949,7 @@ class ModelAPI(object):
         ),
         ignore_index=True)
 
-    return df</code></pre>
+    return df, pages_left</code></pre>
 </details>
 </dd>
 </dl>
@@ -829,18 +981,20 @@ class ModelAPI(object):
 </li>
 <li>
 <h4><code><a title="bulk_api_client.Client" href="#bulk_api_client.Client">Client</a></code></h4>
-<ul class="">
+<ul class="two-column">
 <li><code><a title="bulk_api_client.Client.app" href="#bulk_api_client.Client.app">app</a></code></li>
 <li><code><a title="bulk_api_client.Client.app_api_urls" href="#bulk_api_client.Client.app_api_urls">app_api_urls</a></code></li>
 <li><code><a title="bulk_api_client.Client.clear_cache" href="#bulk_api_client.Client.clear_cache">clear_cache</a></code></li>
 <li><code><a title="bulk_api_client.Client.model_api_urls" href="#bulk_api_client.Client.model_api_urls">model_api_urls</a></code></li>
 <li><code><a title="bulk_api_client.Client.request" href="#bulk_api_client.Client.request">request</a></code></li>
+<li><code><a title="bulk_api_client.Client.temp_dir" href="#bulk_api_client.Client.temp_dir">temp_dir</a></code></li>
 </ul>
 </li>
 <li>
 <h4><code><a title="bulk_api_client.ModelAPI" href="#bulk_api_client.ModelAPI">ModelAPI</a></code></h4>
 <ul class="">
 <li><code><a title="bulk_api_client.ModelAPI.query" href="#bulk_api_client.ModelAPI.query">query</a></code></li>
+<li><code><a title="bulk_api_client.ModelAPI.query_request" href="#bulk_api_client.ModelAPI.query_request">query_request</a></code></li>
 </ul>
 </li>
 </ul>
