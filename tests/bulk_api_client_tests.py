@@ -5,6 +5,7 @@ import string
 import json
 from io import BytesIO
 from unittest import mock
+from datetime import datetime, timedelta
 from pandas import DataFrame, read_csv
 from urllib.parse import urljoin
 from requests.models import Response
@@ -330,3 +331,39 @@ def test_model_api_query_request_invalid_params(model_api, kwarg, val, msg):
         with pytest.raises(TypeError) as err:
             model_api.query_request(**params)
     assert str(err.value) == str(msg)
+
+
+def test_model_api_query_request_fresh_cache(model_api):
+    """Test ModelAPI query_request caches new file after 2 hours old"""
+
+    test_time = (datetime.now() - timedelta(hours=2)).timestamp()
+
+    response = Response()
+    response.status_code = 200
+    response.headers['page_count'] = 1
+    response.headers['current_page'] = 1
+    response._content = b'col1,col2\n1,2'
+    response.raw = BytesIO(b'col1,col2\n1,2')
+
+    with mock.patch.object(Client, 'request',
+                           return_value=response) as fn:
+        test_model_data_frame, pages_left = model_api.query_request()
+
+    test_file_path = os.path.join(
+        model_api.app.client.temp_dir,
+        os.listdir(model_api.app.client.temp_dir)[0]
+    )
+    test_file = os.path.join(test_file_path, os.listdir(
+        test_file_path)[0])
+    os.utime(test_file, (test_time, test_time))
+
+    new_response = Response()
+    new_response.status_code = 200
+    new_response.headers['page_count'] = 1
+    new_response.headers['current_page'] = 1
+    new_response._content = b'col1,col2\n1,2'
+    new_response.raw = BytesIO(b'col1,col2\n1,2')
+    with mock.patch.object(Client, 'request',
+                           return_value=new_response) as fn:
+        df, pl = model_api.query_request()
+    assert int(os.path.getmtime(test_file)) != int(test_time)

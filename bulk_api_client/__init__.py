@@ -4,6 +4,7 @@ import requests
 import json
 import re
 import shutil
+from datetime import datetime, timedelta
 
 from urllib.parse import urlparse
 from tempfile import gettempdir
@@ -258,7 +259,10 @@ class ModelAPI(object):
         os.makedirs(path, exist_ok=True)
         query_hash = "{}.csv".format(hash(json.dumps(params, sort_keys=True)))
         csv_path = os.path.join(path, query_hash)
-        if not os.path.exists(csv_path):
+        pages_left = 0
+        expiration_time = (datetime.now() - timedelta(hours=2)).timestamp()
+        if not os.path.exists(csv_path) or (
+                os.path.getmtime(csv_path) < expiration_time):
             with self.app.client.request('GET', url, params=params) as response:
                 pages_left = response.headers['page_count'] - response.headers[
                     'current_page']
