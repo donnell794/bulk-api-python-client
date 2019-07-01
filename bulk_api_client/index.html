@@ -28,7 +28,7 @@ import requests
 import json
 import re
 import shutil
-
+from datetime import datetime, timedelta
 from urllib.parse import urlparse
 from tempfile import gettempdir
 
@@ -269,6 +269,8 @@ class ModelAPI(object):
         if page is not None and (
                 not isinstance(page, int) or page &lt;= 0):
             raise TypeError({&#39;detail&#39;: &#34;page must be a positive integer&#34;})
+        if page is None:
+            page = 1
         if page_size is not None and (
                 not isinstance(page_size, int) or page_size &lt;= 0):
             raise TypeError({&#39;detail&#39;: &#34;page size must be a positive integer&#34;})
@@ -281,13 +283,24 @@ class ModelAPI(object):
         path = os.path.join(self.app.client.temp_dir, path)
         os.makedirs(path, exist_ok=True)
         query_hash = &#34;{}.csv&#34;.format(hash(json.dumps(params, sort_keys=True)))
+        pageless_params = {&#39;fields&#39;: fields, &#39;filter&#39;: filter,
+                           &#39;ordering&#39;: order, &#39;page_size&#39;: page_size}
+        page_hash = &#34;{}.count&#34;.format(
+            hash(json.dumps(pageless_params, sort_keys=True)))
         csv_path = os.path.join(path, query_hash)
-        if not os.path.exists(csv_path):
+        page_path = os.path.join(path, page_hash)
+        expiration_time = (datetime.now() - timedelta(hours=2)).timestamp()
+        if not os.path.exists(csv_path) or (
+                os.path.getmtime(csv_path) &lt; expiration_time):
             with self.app.client.request(&#39;GET&#39;, url, params=params) as response:
-                pages_left = response.headers[&#39;page_count&#39;] - response.headers[
-                    &#39;current_page&#39;]
+                pages_left = int(response.headers[&#39;page_count&#39;]) - page
                 with open(csv_path, &#39;wb&#39;) as f:
                     shutil.copyfileobj(response.raw, f)
+                with open(page_path, &#39;w&#39;) as f:
+                    f.write(str(response.headers[&#39;page_count&#39;]))
+        else:
+            with open(page_path, &#39;rb&#39;) as f:
+                pages_left = int(f.readline()) - page
 
         df = pandas.concat(
             pandas.read_csv(
@@ -773,6 +786,8 @@ dictionary.</p>
         if page is not None and (
                 not isinstance(page, int) or page &lt;= 0):
             raise TypeError({&#39;detail&#39;: &#34;page must be a positive integer&#34;})
+        if page is None:
+            page = 1
         if page_size is not None and (
                 not isinstance(page_size, int) or page_size &lt;= 0):
             raise TypeError({&#39;detail&#39;: &#34;page size must be a positive integer&#34;})
@@ -785,13 +800,24 @@ dictionary.</p>
         path = os.path.join(self.app.client.temp_dir, path)
         os.makedirs(path, exist_ok=True)
         query_hash = &#34;{}.csv&#34;.format(hash(json.dumps(params, sort_keys=True)))
+        pageless_params = {&#39;fields&#39;: fields, &#39;filter&#39;: filter,
+                           &#39;ordering&#39;: order, &#39;page_size&#39;: page_size}
+        page_hash = &#34;{}.count&#34;.format(
+            hash(json.dumps(pageless_params, sort_keys=True)))
         csv_path = os.path.join(path, query_hash)
-        if not os.path.exists(csv_path):
+        page_path = os.path.join(path, page_hash)
+        expiration_time = (datetime.now() - timedelta(hours=2)).timestamp()
+        if not os.path.exists(csv_path) or (
+                os.path.getmtime(csv_path) &lt; expiration_time):
             with self.app.client.request(&#39;GET&#39;, url, params=params) as response:
-                pages_left = response.headers[&#39;page_count&#39;] - response.headers[
-                    &#39;current_page&#39;]
+                pages_left = int(response.headers[&#39;page_count&#39;]) - page
                 with open(csv_path, &#39;wb&#39;) as f:
                     shutil.copyfileobj(response.raw, f)
+                with open(page_path, &#39;w&#39;) as f:
+                    f.write(str(response.headers[&#39;page_count&#39;]))
+        else:
+            with open(page_path, &#39;rb&#39;) as f:
+                pages_left = int(f.readline()) - page
 
         df = pandas.concat(
             pandas.read_csv(
@@ -922,6 +948,8 @@ any parameters.</p>
     if page is not None and (
             not isinstance(page, int) or page &lt;= 0):
         raise TypeError({&#39;detail&#39;: &#34;page must be a positive integer&#34;})
+    if page is None:
+        page = 1
     if page_size is not None and (
             not isinstance(page_size, int) or page_size &lt;= 0):
         raise TypeError({&#39;detail&#39;: &#34;page size must be a positive integer&#34;})
@@ -934,13 +962,24 @@ any parameters.</p>
     path = os.path.join(self.app.client.temp_dir, path)
     os.makedirs(path, exist_ok=True)
     query_hash = &#34;{}.csv&#34;.format(hash(json.dumps(params, sort_keys=True)))
+    pageless_params = {&#39;fields&#39;: fields, &#39;filter&#39;: filter,
+                       &#39;ordering&#39;: order, &#39;page_size&#39;: page_size}
+    page_hash = &#34;{}.count&#34;.format(
+        hash(json.dumps(pageless_params, sort_keys=True)))
     csv_path = os.path.join(path, query_hash)
-    if not os.path.exists(csv_path):
+    page_path = os.path.join(path, page_hash)
+    expiration_time = (datetime.now() - timedelta(hours=2)).timestamp()
+    if not os.path.exists(csv_path) or (
+            os.path.getmtime(csv_path) &lt; expiration_time):
         with self.app.client.request(&#39;GET&#39;, url, params=params) as response:
-            pages_left = response.headers[&#39;page_count&#39;] - response.headers[
-                &#39;current_page&#39;]
+            pages_left = int(response.headers[&#39;page_count&#39;]) - page
             with open(csv_path, &#39;wb&#39;) as f:
                 shutil.copyfileobj(response.raw, f)
+            with open(page_path, &#39;w&#39;) as f:
+                f.write(str(response.headers[&#39;page_count&#39;]))
+    else:
+        with open(page_path, &#39;rb&#39;) as f:
+            pages_left = int(f.readline()) - page
 
     df = pandas.concat(
         pandas.read_csv(
