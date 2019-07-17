@@ -58,7 +58,7 @@ def is_kv(kv_str):
     Returns:
         Bool
     &#34;&#34;&#34;
-    return bool(re.fullmatch(r&#39;(^\w+=\w+$)&#39;, kv_str))
+    return &#39;=&#39; in kv_str
 
 
 class Client(object):
@@ -345,7 +345,7 @@ class ModelAPI(object):
     Returns:
         Bool
     &#34;&#34;&#34;
-    return bool(re.fullmatch(r&#39;(^\w+=\w+$)&#39;, kv_str))</code></pre>
+    return &#39;=&#39; in kv_str</code></pre>
 </details>
 </dd>
 </dl>
