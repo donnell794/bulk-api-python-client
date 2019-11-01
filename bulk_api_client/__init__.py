@@ -308,9 +308,9 @@ class ModelAPI(object):
             self.model_name]
         url = urljoin(self.app.client.api_url, path)
         params = {
-            'Media type': 'application/json',
             'Content': json.dumps(obj_data)
         }
+        breakpoint()
         response = self.app.client.request('POST', url, params=params)
         return json.loads(response.content)
 
