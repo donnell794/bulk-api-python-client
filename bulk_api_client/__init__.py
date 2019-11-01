@@ -295,3 +295,10 @@ class ModelAPI(object):
             ignore_index=True)
 
         return df, pages_left
+
+    def list(self):
+        path = self.app.client.model_api_urls[self.app.app_label][
+            self.model_name]
+        url = urljoin(self.app.client.api_url, path)
+        response = self.app.client.request('GET', url, params={})
+        return json.loads(response.content)

@@ -380,3 +380,22 @@ def test_model_api_query_request_fresh_cache(model_api):
     assert test_model_data_frame.values.tolist() == [[3, 4]]
     assert test_model_data_frame.shape == (1, 2)
     assert pages_left == 0
+
+
+def test_model_api_list(model_api):
+    """Test ModelAPI list method works as intented"""
+
+    path = model_api.app.client.app_api_urls[model_api.app.app_label]
+    url = urljoin(path, model_api.model_name)
+    content = b'[{"id": 1016, "created_at": "2019-11-01T19:17:50.415922Z",'\
+        b'"updated_at": "2019-11-01T19:17:50.416090Z", "text":'\
+        b'"EYdVWVxempVwBpqMENtuYmGZJskLE", "date_time":'\
+        b'"2019-11-10T07:28:34.088291Z",'\
+        b'"integer": 5, "imported_from": null}]'
+    response = Response()
+    response.status_code = 200
+    response._content = content
+    with mock.patch.object(Client, 'request', return_value=response) as fn:
+        obj = model_api.list()
+        fn.assert_called_with('GET', url, params={})
+    assert obj == json.loads(content)
