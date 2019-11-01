@@ -310,7 +310,6 @@ class ModelAPI(object):
         params = {
             'Content': json.dumps(obj_data)
         }
-        breakpoint()
         response = self.app.client.request('POST', url, params=params)
         return json.loads(response.content)
 
