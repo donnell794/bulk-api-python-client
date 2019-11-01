@@ -28,6 +28,7 @@ import requests
 import json
 import re
 import shutil
+import sys
 from datetime import datetime, timedelta
 from urllib.parse import urlparse, urljoin
 from tempfile import gettempdir
@@ -280,13 +281,21 @@ class ModelAPI(object):
         url = urljoin(self.app.client.api_url, os.path.join(url_path, &#39;query&#39;))
         params = {&#39;fields&#39;: fields, &#39;filter&#39;: filter,
                   &#39;ordering&#39;: order, &#39;page&#39;: page, &#39;page_size&#39;: page_size}
-        path = os.path.join(self.app.client.temp_dir, url_path)
+        url_hash = str(hash(url_path) + sys.maxsize + 1)
+        path = os.path.join(self.app.client.temp_dir, url_hash)
         os.makedirs(path, exist_ok=True)
-        query_hash = &#34;{}.csv&#34;.format(hash(json.dumps(params, sort_keys=True)))
+        query_hash = &#34;{}.csv&#34;.format(
+            hash(json.dumps(params, sort_keys=True))
+            + sys.maxsize
+            + 1
+        )
         pageless_params = {&#39;fields&#39;: fields, &#39;filter&#39;: filter,
                            &#39;ordering&#39;: order, &#39;page_size&#39;: page_size}
         page_hash = &#34;{}.count&#34;.format(
-            hash(json.dumps(pageless_params, sort_keys=True)))
+            hash(json.dumps(pageless_params, sort_keys=True))
+            + sys.maxsize
+            + 1
+        )
         csv_path = os.path.join(path, query_hash)
         page_path = os.path.join(path, page_hash)
         expiration_time = (datetime.now() - timedelta(hours=2)).timestamp()
@@ -797,13 +806,21 @@ dictionary.</p>
         url = urljoin(self.app.client.api_url, os.path.join(url_path, &#39;query&#39;))
         params = {&#39;fields&#39;: fields, &#39;filter&#39;: filter,
                   &#39;ordering&#39;: order, &#39;page&#39;: page, &#39;page_size&#39;: page_size}
-        path = os.path.join(self.app.client.temp_dir, url_path)
+        url_hash = str(hash(url_path) + sys.maxsize + 1)
+        path = os.path.join(self.app.client.temp_dir, url_hash)
         os.makedirs(path, exist_ok=True)
-        query_hash = &#34;{}.csv&#34;.format(hash(json.dumps(params, sort_keys=True)))
+        query_hash = &#34;{}.csv&#34;.format(
+            hash(json.dumps(params, sort_keys=True))
+            + sys.maxsize
+            + 1
+        )
         pageless_params = {&#39;fields&#39;: fields, &#39;filter&#39;: filter,
                            &#39;ordering&#39;: order, &#39;page_size&#39;: page_size}
         page_hash = &#34;{}.count&#34;.format(
-            hash(json.dumps(pageless_params, sort_keys=True)))
+            hash(json.dumps(pageless_params, sort_keys=True))
+            + sys.maxsize
+            + 1
+        )
         csv_path = os.path.join(path, query_hash)
         page_path = os.path.join(path, page_hash)
         expiration_time = (datetime.now() - timedelta(hours=2)).timestamp()
@@ -959,13 +976,21 @@ any parameters.</p>
     url = urljoin(self.app.client.api_url, os.path.join(url_path, &#39;query&#39;))
     params = {&#39;fields&#39;: fields, &#39;filter&#39;: filter,
               &#39;ordering&#39;: order, &#39;page&#39;: page, &#39;page_size&#39;: page_size}
-    path = os.path.join(self.app.client.temp_dir, url_path)
+    url_hash = str(hash(url_path) + sys.maxsize + 1)
+    path = os.path.join(self.app.client.temp_dir, url_hash)
     os.makedirs(path, exist_ok=True)
-    query_hash = &#34;{}.csv&#34;.format(hash(json.dumps(params, sort_keys=True)))
+    query_hash = &#34;{}.csv&#34;.format(
+        hash(json.dumps(params, sort_keys=True))
+        + sys.maxsize
+        + 1
+    )
     pageless_params = {&#39;fields&#39;: fields, &#39;filter&#39;: filter,
                        &#39;ordering&#39;: order, &#39;page_size&#39;: page_size}
     page_hash = &#34;{}.count&#34;.format(
-        hash(json.dumps(pageless_params, sort_keys=True)))
+        hash(json.dumps(pageless_params, sort_keys=True))
+        + sys.maxsize
+        + 1
+    )
     csv_path = os.path.join(path, query_hash)
     page_path = os.path.join(path, page_hash)
     expiration_time = (datetime.now() - timedelta(hours=2)).timestamp()
