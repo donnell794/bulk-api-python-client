@@ -261,8 +261,7 @@ class ModelAPI(object):
                 raise filter_error
             q_list = re.split(r&#34;(\||\&amp;)&#34;, filter)
             for q_val in q_list:
-                if not is_kv(q_val) and not re.fullmatch(
-                        r&#39;(^[\||\&amp;]$)&#39;, q_val):
+                if not is_kv(q_val) and not re.fullmatch(r&#39;(^[\||\&amp;]$)&#39;, q_val):
                     raise filter_error
         if order is not None:
             if not isinstance(order, str):
@@ -779,8 +778,7 @@ dictionary.</p>
                 raise filter_error
             q_list = re.split(r&#34;(\||\&amp;)&#34;, filter)
             for q_val in q_list:
-                if not is_kv(q_val) and not re.fullmatch(
-                        r&#39;(^[\||\&amp;]$)&#39;, q_val):
+                if not is_kv(q_val) and not re.fullmatch(r&#39;(^[\||\&amp;]$)&#39;, q_val):
                     raise filter_error
         if order is not None:
             if not isinstance(order, str):
@@ -942,8 +940,7 @@ any parameters.</p>
             raise filter_error
         q_list = re.split(r&#34;(\||\&amp;)&#34;, filter)
         for q_val in q_list:
-            if not is_kv(q_val) and not re.fullmatch(
-                    r&#39;(^[\||\&amp;]$)&#39;, q_val):
+            if not is_kv(q_val) and not re.fullmatch(r&#39;(^[\||\&amp;]$)&#39;, q_val):
                 raise filter_error
     if order is not None:
         if not isinstance(order, str):
