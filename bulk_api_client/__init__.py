@@ -4,6 +4,7 @@ import requests
 import json
 import re
 import shutil
+import sys
 from datetime import datetime, timedelta
 from urllib.parse import urlparse, urljoin
 from tempfile import gettempdir
@@ -256,9 +257,14 @@ class ModelAPI(object):
         url = urljoin(self.app.client.api_url, os.path.join(url_path, 'query'))
         params = {'fields': fields, 'filter': filter,
                   'ordering': order, 'page': page, 'page_size': page_size}
-        path = os.path.join(self.app.client.temp_dir, url_path)
+        url_hash = str(hash(url_path) + sys.maxsize + 1)
+        path = os.path.join(self.app.client.temp_dir, url_hash)
         os.makedirs(path, exist_ok=True)
-        query_hash = "{}.csv".format(hash(json.dumps(params, sort_keys=True)))
+        query_hash = "{}.csv".format(
+            hash(json.dumps(params, sort_keys=True))
+            + sys.maxsize
+            + 1
+        )
         pageless_params = {'fields': fields, 'filter': filter,
                            'ordering': order, 'page_size': page_size}
         page_hash = "{}.count".format(
