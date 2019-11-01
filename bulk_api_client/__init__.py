@@ -268,7 +268,10 @@ class ModelAPI(object):
         pageless_params = {'fields': fields, 'filter': filter,
                            'ordering': order, 'page_size': page_size}
         page_hash = "{}.count".format(
-            hash(json.dumps(pageless_params, sort_keys=True)))
+            hash(json.dumps(pageless_params, sort_keys=True))
+            + sys.maxsize
+            + 1
+        )
         csv_path = os.path.join(path, query_hash)
         page_path = os.path.join(path, page_hash)
         expiration_time = (datetime.now() - timedelta(hours=2)).timestamp()
