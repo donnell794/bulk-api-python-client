@@ -302,3 +302,21 @@ class ModelAPI(object):
         url = urljoin(self.app.client.api_url, path)
         response = self.app.client.request('GET', url, params={})
         return json.loads(response.content)
+
+    def create(self, obj_data):
+        path = self.app.client.model_api_urls[self.app.app_label][
+            self.model_name]
+        url = urljoin(self.app.client.api_url, path)
+        params = {
+            'Media type': 'application/json',
+            'Content': json.dumps(obj_data)
+        }
+        response = self.app.client.request('POST', url, params=params)
+        return json.loads(response.content)
+
+    def get(self, pk):
+        path = self.app.client.model_api_urls[self.app.app_label][
+            self.model_name]
+        url = urljoin(self.app.client.api_url, os.path.join(path, pk))
+        response = self.app.client.request('GET', url, params={})
+        return json.loads(response.content)

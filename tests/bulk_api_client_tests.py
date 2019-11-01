@@ -399,3 +399,46 @@ def test_model_api_list(model_api):
         obj = model_api.list()
         fn.assert_called_with('GET', url, params={})
     assert obj == json.loads(content)
+
+
+def test_model_api_create(model_api):
+    """Test ModelAPI list method works as intented"""
+
+    path = model_api.app.client.app_api_urls[model_api.app.app_label]
+    url = urljoin(path, model_api.model_name)
+    content = b'[{"id": 1016, "created_at": "2019-11-01T19:17:50.415922Z",'\
+        b'"updated_at": "2019-11-01T19:17:50.416090Z", "text":'\
+        b'"EYdVWVxempVwBpqMENtuYmGZJskLE", "date_time":'\
+        b'"2019-11-10T07:28:34.088291Z",'\
+        b'"integer": 5, "imported_from": null}]'
+    params = {
+        'text': 'EYdVWVxempVwBpqMENtuYmGZJskLE',
+        'date_time': '2019-11-01T19:17:50.416090Z',
+        'integer': 5
+    }
+    response = Response()
+    response.status_code = 200
+    response._content = content
+    with mock.patch.object(Client, 'request', return_value=response) as fn:
+        obj = model_api.create(params)
+        fn.assert_called_with('POST', url, params=params)
+    assert obj == json.loads(content)
+
+
+def test_model_api_get(model_api):
+    """Test ModelAPI list method works as intented"""
+
+    path = model_api.app.client.app_api_urls[model_api.app.app_label]
+    url = urljoin(path, os.path.join(model_api.model_name, '1016'))
+    content = b'[{"id": 1016, "created_at": "2019-11-01T19:17:50.415922Z",'\
+        b'"updated_at": "2019-11-01T19:17:50.416090Z", "text":'\
+        b'"EYdVWVxempVwBpqMENtuYmGZJskLE", "date_time":'\
+        b'"2019-11-10T07:28:34.088291Z",'\
+        b'"integer": 5, "imported_from": null}]'
+    response = Response()
+    response.status_code = 200
+    response._content = content
+    with mock.patch.object(Client, 'request', return_value=response) as fn:
+        obj = model_api.get('1016')
+        fn.assert_called_with('GET', url, params={})
+    assert obj == json.loads(content)
