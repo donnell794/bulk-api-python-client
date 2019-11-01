@@ -29,7 +29,7 @@ import json
 import re
 import shutil
 from datetime import datetime, timedelta
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urljoin
 from tempfile import gettempdir
 
 
@@ -275,12 +275,12 @@ class ModelAPI(object):
                 not isinstance(page_size, int) or page_size &lt;= 0):
             raise TypeError({&#39;detail&#39;: &#34;page size must be a positive integer&#34;})
 
-        url = self.app.client.model_api_urls[self.app.app_label][
+        url_path = self.app.client.model_api_urls[self.app.app_label][
             self.model_name]
+        url = urljoin(self.app.client.api_url, os.path.join(url_path, &#39;query&#39;))
         params = {&#39;fields&#39;: fields, &#39;filter&#39;: filter,
                   &#39;ordering&#39;: order, &#39;page&#39;: page, &#39;page_size&#39;: page_size}
-        path = urlparse(url).path[1:]
-        path = os.path.join(self.app.client.temp_dir, path)
+        path = os.path.join(self.app.client.temp_dir, url_path)
         os.makedirs(path, exist_ok=True)
         query_hash = &#34;{}.csv&#34;.format(hash(json.dumps(params, sort_keys=True)))
         pageless_params = {&#39;fields&#39;: fields, &#39;filter&#39;: filter,
@@ -792,12 +792,12 @@ dictionary.</p>
                 not isinstance(page_size, int) or page_size &lt;= 0):
             raise TypeError({&#39;detail&#39;: &#34;page size must be a positive integer&#34;})
 
-        url = self.app.client.model_api_urls[self.app.app_label][
+        url_path = self.app.client.model_api_urls[self.app.app_label][
             self.model_name]
+        url = urljoin(self.app.client.api_url, os.path.join(url_path, &#39;query&#39;))
         params = {&#39;fields&#39;: fields, &#39;filter&#39;: filter,
                   &#39;ordering&#39;: order, &#39;page&#39;: page, &#39;page_size&#39;: page_size}
-        path = urlparse(url).path[1:]
-        path = os.path.join(self.app.client.temp_dir, path)
+        path = os.path.join(self.app.client.temp_dir, url_path)
         os.makedirs(path, exist_ok=True)
         query_hash = &#34;{}.csv&#34;.format(hash(json.dumps(params, sort_keys=True)))
         pageless_params = {&#39;fields&#39;: fields, &#39;filter&#39;: filter,
@@ -954,12 +954,12 @@ any parameters.</p>
             not isinstance(page_size, int) or page_size &lt;= 0):
         raise TypeError({&#39;detail&#39;: &#34;page size must be a positive integer&#34;})
 
-    url = self.app.client.model_api_urls[self.app.app_label][
+    url_path = self.app.client.model_api_urls[self.app.app_label][
         self.model_name]
+    url = urljoin(self.app.client.api_url, os.path.join(url_path, &#39;query&#39;))
     params = {&#39;fields&#39;: fields, &#39;filter&#39;: filter,
               &#39;ordering&#39;: order, &#39;page&#39;: page, &#39;page_size&#39;: page_size}
-    path = urlparse(url).path[1:]
-    path = os.path.join(self.app.client.temp_dir, path)
+    path = os.path.join(self.app.client.temp_dir, url_path)
     os.makedirs(path, exist_ok=True)
     query_hash = &#34;{}.csv&#34;.format(hash(json.dumps(params, sort_keys=True)))
     pageless_params = {&#39;fields&#39;: fields, &#39;filter&#39;: filter,
