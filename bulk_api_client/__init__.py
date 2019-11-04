@@ -329,11 +329,11 @@ class ModelAPI(object):
             **obj_data
         }
         response = self.app.client.request('PUT', url, params=params)
-        return json.loads(response.content)
+        return response.status_code
 
     def delete(self, pk):
         path = self.app.client.model_api_urls[self.app.app_label][
             self.model_name]
         url = urljoin(self.app.client.api_url, os.path.join(path, pk))
         response = self.app.client.request('DELETE', url, params={})
-        return json.loads(response.content)
+        return response.status_code

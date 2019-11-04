@@ -449,11 +449,6 @@ def test_model_api_update(model_api):
 
     path = model_api.app.client.app_api_urls[model_api.app.app_label]
     url = urljoin(path, os.path.join(model_api.model_name, '1016'))
-    content = b'[{"id": 1016, "created_at": "2019-11-01T19:17:50.415922Z",'\
-        b'"updated_at": "2019-11-01T19:17:50.416090Z", "text":'\
-        b'"EYdVWVxempVwBpqMENtuYmGZJskLE", "date_time":'\
-        b'"2019-11-10T07:28:34.088291Z",'\
-        b'"integer": 5, "imported_from": null}]'
     params = {
         'text': 'EYdVWVxempVwBpqMENtuYmGZJskLE',
         'date_time': '2019-11-01T19:17:50.416090Z',
@@ -461,11 +456,10 @@ def test_model_api_update(model_api):
     }
     response = Response()
     response.status_code = 200
-    response._content = content
     with mock.patch.object(Client, 'request', return_value=response) as fn:
         obj = model_api.update('1016', params)
         fn.assert_called_with('PUT', url, params=params)
-    assert obj == json.loads(content)
+    assert obj == response.status_code
 
 
 def test_model_api_delete(model_api):
@@ -473,14 +467,12 @@ def test_model_api_delete(model_api):
 
     path = model_api.app.client.app_api_urls[model_api.app.app_label]
     url = urljoin(path, os.path.join(model_api.model_name, '1016'))
-    content = b''
     response = Response()
     response.status_code = 200
-    response._content = content
     with mock.patch.object(Client, 'request', return_value=response) as fn:
         obj = model_api.delete('1016')
-        fn.assert_called_with('delete', url, params={})
-    assert obj == json.loads(content)
+        fn.assert_called_with('DELETE', url, params={})
+    assert obj == response.status_code
 
 
 def test_create():
