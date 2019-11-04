@@ -308,7 +308,8 @@ class ModelAPI(object):
             self.model_name]
         url = urljoin(self.app.client.api_url, path)
         params = {
-            'Content': json.dumps(obj_data)
+            'Content-Type': 'application/json',
+            **obj_data
         }
         response = self.app.client.request('POST', url, params=params)
         return json.loads(response.content)
@@ -318,4 +319,21 @@ class ModelAPI(object):
             self.model_name]
         url = urljoin(self.app.client.api_url, os.path.join(path, pk))
         response = self.app.client.request('GET', url, params={})
+        return json.loads(response.content)
+
+    def update(self, pk, obj_data):
+        path = self.app.client.model_api_urls[self.app.app_label][
+            self.model_name]
+        url = urljoin(self.app.client.api_url, os.path.join(path, pk))
+        params = {
+            **obj_data
+        }
+        response = self.app.client.request('PUT', url, params=params)
+        return json.loads(response.content)
+
+    def delete(self, pk):
+        path = self.app.client.model_api_urls[self.app.app_label][
+            self.model_name]
+        url = urljoin(self.app.client.api_url, os.path.join(path, pk))
+        response = self.app.client.request('DELETE', url, params={})
         return json.loads(response.content)
