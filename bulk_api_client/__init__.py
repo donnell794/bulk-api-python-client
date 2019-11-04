@@ -6,7 +6,7 @@ import re
 import shutil
 import sys
 from datetime import datetime, timedelta
-from urllib.parse import urlparse, urljoin
+from urllib.parse import urljoin
 from tempfile import gettempdir
 
 
@@ -63,7 +63,7 @@ class Client(object):
         """Temp directory to host files created by the client"""
         os.makedirs(self.temp_dir, exist_ok=True)
 
-    def request(self, method, url, params, ):
+    def request(self, *args, **kwargs):
         """Request function to construct and send a request. Uses the Requests
         python library
 
@@ -78,13 +78,12 @@ class Client(object):
 
         """
         headers = {'Authorization': 'Token {}'.format(self.token)}
+        breakpoint()
         response = requests.request(
-            method,
-            url,
-            params=params,
             headers=headers,
             verify=CERT_PATH,
-            stream=True
+            stream=True,
+            **kwargs
         )
 
         if response.status_code != 200:
@@ -307,11 +306,13 @@ class ModelAPI(object):
         path = self.app.client.model_api_urls[self.app.app_label][
             self.model_name]
         url = urljoin(self.app.client.api_url, path)
-        params = {
-            'Content-Type': 'application/json',
-            **obj_data
+        data = json.dumps(obj_data)
+        kwargs = {
+            'method': 'POST',
+            'url': url,
+            'data': data,
         }
-        response = self.app.client.request('POST', url, params=params)
+        response = self.app.client.request(method='GET', url=url, data=data)
         return json.loads(response.content)
 
     def get(self, pk):
