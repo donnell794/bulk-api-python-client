@@ -46,19 +46,19 @@ def test_client_request(client):
     path = random_string()
     full_path = urljoin(client.api_url, path)
     params = {'teset_param': 1}
-    headers = {'Authorization': 'Token {}'.format(client.token)}
+    kwargs = {'headers': {'Authorization': 'Token {}'.format(client.token)}}
     response = Response()
     response._content = b''
     response.status_code = 200
     with mock.patch.object(requests, 'request', return_value=response) as fn:
         client.request(method, full_path, params)
         fn.assert_called_with(
-            method,
-            full_path,
+            method=method,
+            url=full_path,
             params=params,
-            headers=headers,
             verify=CERT_PATH,
-            stream=True
+            stream=True,
+            **kwargs
         )
 
 
@@ -75,7 +75,7 @@ def test_client_request_errors(client, status_code, err_msg):
     path = random_string()
     full_path = urljoin(client.api_url, path)
     params = {'teset_param': 1}
-    headers = {'Authorization': 'Token {}'.format(client.token)}
+    kwargs = {'headers': {'Authorization': 'Token {}'.format(client.token)}}
     response = Response()
     response._content = json.dumps(err_msg)
     response.status_code = status_code
@@ -83,12 +83,12 @@ def test_client_request_errors(client, status_code, err_msg):
         with pytest.raises(BulkAPIError) as err:
             client.request(method, full_path, params)
         fn.assert_called_with(
-            method,
-            full_path,
+            method=method,
+            url=full_path,
             params=params,
-            headers=headers,
             verify=CERT_PATH,
-            stream=True
+            stream=True,
+            **kwargs
         )
     assert str(err.value) == str(err_msg)
 
@@ -411,17 +411,25 @@ def test_model_api_create(model_api):
         b'"EYdVWVxempVwBpqMENtuYmGZJskLE", "date_time":'\
         b'"2019-11-10T07:28:34.088291Z",'\
         b'"integer": 5, "imported_from": null}]'
-    params = {
+    obj_data = {
         'text': 'EYdVWVxempVwBpqMENtuYmGZJskLE',
         'date_time': '2019-11-01T19:17:50.416090Z',
         'integer': 5
+    }
+    data = json.dumps(obj_data)
+    kwargs = {
+        'data': data,
+        'headers': {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        }
     }
     response = Response()
     response.status_code = 200
     response._content = content
     with mock.patch.object(Client, 'request', return_value=response) as fn:
-        obj = model_api.create(params)
-        fn.assert_called_with('POST', url, params=params)
+        obj = model_api.create(obj_data)
+        fn.assert_called_with('POST', url, params={}, **kwargs)
     assert obj == json.loads(content)
 
 
@@ -449,16 +457,24 @@ def test_model_api_update(model_api):
 
     path = model_api.app.client.app_api_urls[model_api.app.app_label]
     url = urljoin(path, os.path.join(model_api.model_name, '1016'))
-    params = {
+    obj_data = {
         'text': 'EYdVWVxempVwBpqMENtuYmGZJskLE',
         'date_time': '2019-11-01T19:17:50.416090Z',
         'integer': 5
     }
+    data = json.dumps(obj_data)
+    kwargs = {
+        'data': data,
+        'headers': {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        }
+    }
     response = Response()
     response.status_code = 200
     with mock.patch.object(Client, 'request', return_value=response) as fn:
-        obj = model_api.update('1016', params)
-        fn.assert_called_with('PUT', url, params=params)
+        obj = model_api.update('1016', obj_data)
+        fn.assert_called_with('PUT', url, params={}, **kwargs)
     assert obj == response.status_code
 
 
@@ -475,7 +491,7 @@ def test_model_api_delete(model_api):
     assert obj == response.status_code
 
 
-def test_create():
+def test_update():
     c = Client('38486ffedf3b539722c6b1082947ee8fd6809258',
                api_url='http://localhost:8000/bulk/api/')
     data = {
@@ -483,4 +499,15 @@ def test_create():
         "date_time": "2015-1-10T07:28:34.088291Z",
         "integer": 2
     }
-    c.app('bulk_importer').model('examplefortesting').create(data)
+    c.app('bulk_importer').model('examplefortesting').update('1027', data)
+
+
+def test_delete():
+    c = Client('38486ffedf3b539722c6b1082947ee8fd6809258',
+               api_url='http://localhost:8000/bulk/api/')
+    data = {
+        "text": "empVwB",
+        "date_time": "2015-1-10T07:28:34.088291Z",
+        "integer": 2
+    }
+    c.app('bulk_importer').model('examplefortesting').delete('1027')

@@ -63,7 +63,7 @@ class Client(object):
         """Temp directory to host files created by the client"""
         os.makedirs(self.temp_dir, exist_ok=True)
 
-    def request(self, *args, **kwargs):
+    def request(self, method, url, params, *args, **kwargs):
         """Request function to construct and send a request. Uses the Requests
         python library
 
@@ -77,16 +77,24 @@ class Client(object):
             response obj
 
         """
-        headers = {'Authorization': 'Token {}'.format(self.token)}
-        breakpoint()
+        headers = {
+            'Authorization': 'Token {}'.format(self.token),
+        }
+        if kwargs.get('headers'):
+            kwargs['headers'] = {**headers, **kwargs['headers']}
+        else:
+            kwargs['headers'] = headers
         response = requests.request(
-            headers=headers,
+            method=method,
+            url=url,
+            params=params,
             verify=CERT_PATH,
             stream=True,
             **kwargs
         )
 
-        if response.status_code != 200:
+        if response.status_code not in [200, 201]:
+            breakpoint()
             raise BulkAPIError(json.loads(response.content))
         return response
 
@@ -299,7 +307,11 @@ class ModelAPI(object):
         path = self.app.client.model_api_urls[self.app.app_label][
             self.model_name]
         url = urljoin(self.app.client.api_url, path)
-        response = self.app.client.request('GET', url, params={})
+        response = self.app.client.request(
+            'GET',
+            url,
+            params={}
+        )
         return json.loads(response.content)
 
     def create(self, obj_data):
@@ -308,33 +320,58 @@ class ModelAPI(object):
         url = urljoin(self.app.client.api_url, path)
         data = json.dumps(obj_data)
         kwargs = {
-            'method': 'POST',
-            'url': url,
             'data': data,
+            'headers': {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            }
         }
-        response = self.app.client.request(method='GET', url=url, data=data)
+        response = self.app.client.request(
+            'POST',
+            url,
+            params={},
+            **kwargs
+        )
         return json.loads(response.content)
 
     def get(self, pk):
         path = self.app.client.model_api_urls[self.app.app_label][
             self.model_name]
         url = urljoin(self.app.client.api_url, os.path.join(path, pk))
-        response = self.app.client.request('GET', url, params={})
+        response = self.app.client.request(
+            'GET',
+            url,
+            params={}
+        )
         return json.loads(response.content)
 
     def update(self, pk, obj_data):
         path = self.app.client.model_api_urls[self.app.app_label][
             self.model_name]
         url = urljoin(self.app.client.api_url, os.path.join(path, pk))
-        params = {
-            **obj_data
+        data = json.dumps(obj_data)
+        kwargs = {
+            'data': data,
+            'headers': {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            }
         }
-        response = self.app.client.request('PUT', url, params=params)
+        response = self.app.client.request(
+            'PUT',
+            url,
+            params={},
+            **kwargs
+        )
         return response.status_code
 
     def delete(self, pk):
         path = self.app.client.model_api_urls[self.app.app_label][
             self.model_name]
         url = urljoin(self.app.client.api_url, os.path.join(path, pk))
-        response = self.app.client.request('DELETE', url, params={})
+        response = self.app.client.request(
+            'DELETE',
+            url,
+            params={}
+        )
         return response.status_code
