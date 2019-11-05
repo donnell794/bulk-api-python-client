@@ -499,15 +499,4 @@ def test_update():
         "date_time": "2015-1-10T07:28:34.088291Z",
         "integer": 2
     }
-    c.app('bulk_importer').model('examplefortesting').update('1027', data)
-
-
-def test_delete():
-    c = Client('38486ffedf3b539722c6b1082947ee8fd6809258',
-               api_url='http://localhost:8000/bulk/api/')
-    data = {
-        "text": "empVwB",
-        "date_time": "2015-1-10T07:28:34.088291Z",
-        "integer": 2
-    }
-    c.app('bulk_importer').model('examplefortesting').delete('1027')
+    c.app('bulk_importer').model('examplefortesting').update('1022', data)

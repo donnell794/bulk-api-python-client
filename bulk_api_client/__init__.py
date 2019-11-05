@@ -93,8 +93,7 @@ class Client(object):
             **kwargs
         )
 
-        if response.status_code not in [200, 201]:
-            breakpoint()
+        if response.status_code not in [200, 201, 204]:
             raise BulkAPIError(json.loads(response.content))
         return response
 
@@ -349,6 +348,7 @@ class ModelAPI(object):
         path = self.app.client.model_api_urls[self.app.app_label][
             self.model_name]
         url = urljoin(self.app.client.api_url, os.path.join(path, pk))
+        print(url)
         data = json.dumps(obj_data)
         kwargs = {
             'data': data,
