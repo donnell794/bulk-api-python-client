@@ -94,6 +94,7 @@ class Client(object):
         )
 
         if response.status_code not in [200, 201, 204]:
+            breakpoint()
             raise BulkAPIError(json.loads(response.content))
         return response
 
@@ -348,8 +349,10 @@ class ModelAPI(object):
         path = self.app.client.model_api_urls[self.app.app_label][
             self.model_name]
         url = urljoin(self.app.client.api_url, os.path.join(path, pk))
-        print(url)
-        data = json.dumps(obj_data)
+        obj = self.get(pk)
+        update_data = {k: obj_data.get(k, v) for k, v in obj.items()}
+        data = json.dumps(update_data)
+        # data = json.dumps(obj_data)
         kwargs = {
             'data': data,
             'headers': {
@@ -358,7 +361,7 @@ class ModelAPI(object):
             }
         }
         response = self.app.client.request(
-            'PUT',
+            'PATCH',
             url,
             params={},
             **kwargs
