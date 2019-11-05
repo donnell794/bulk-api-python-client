@@ -374,13 +374,14 @@ class ModelAPI(object):
         )
         return json.loads(response.content)
 
-    def update(self, pk, obj_data):
+    def update(self, pk, obj_data, patch=True):
         """Updates a model object given it's primary key and new object data;
         Makes a 'PATCH' method request to the Bulk API
 
         Args:
             pk (str): primary key of object
             obj_data (dict): new data to update the object with
+            patch(bool): partial update (default: True)
 
         Returns:
             success status code (200)
@@ -397,8 +398,11 @@ class ModelAPI(object):
                 'Accept': 'application/json'
             }
         }
+        method = 'PATCH'
+        if not patch:
+            method = 'PUT'
         response = self.app.client.request(
-            'PATCH',
+            method,
             url,
             params={},
             **kwargs

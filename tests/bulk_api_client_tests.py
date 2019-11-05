@@ -473,6 +473,32 @@ def test_model_api_update(model_api):
     response = Response()
     response.status_code = 200
     with mock.patch.object(Client, 'request', return_value=response) as fn:
+        obj = model_api.update('1016', obj_data, patch=False)
+        fn.assert_called_with('PUT', url, params={}, **kwargs)
+    assert obj == response.status_code
+
+
+def test_model_api_partial_update(model_api):
+    """Test ModelAPI list method works as intented"""
+
+    path = model_api.app.client.app_api_urls[model_api.app.app_label]
+    url = urljoin(path, os.path.join(model_api.model_name, '1016'))
+    obj_data = {
+        'text': 'EYdVWVxempVwBpqMENtuYmGZJskLE',
+        'date_time': '2019-11-01T19:17:50.416090Z',
+        'integer': 5
+    }
+    data = json.dumps(obj_data)
+    kwargs = {
+        'data': data,
+        'headers': {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        }
+    }
+    response = Response()
+    response.status_code = 200
+    with mock.patch.object(Client, 'request', return_value=response) as fn:
         obj = model_api.update('1016', obj_data)
         fn.assert_called_with('PATCH', url, params={}, **kwargs)
     assert obj == response.status_code
