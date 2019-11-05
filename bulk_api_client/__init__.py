@@ -94,7 +94,6 @@ class Client(object):
         )
 
         if response.status_code not in [200, 201, 204]:
-            breakpoint()
             raise BulkAPIError(json.loads(response.content))
         return response
 
@@ -304,6 +303,15 @@ class ModelAPI(object):
         return df, pages_left
 
     def list(self):
+        """Lists all model object of a given model; Makes a 'GET' method request
+        to the Bulk API
+
+        Args:
+
+        Returns:
+            list of dictionary objects of the model data
+
+        """
         path = self.app.client.model_api_urls[self.app.app_label][
             self.model_name]
         url = urljoin(self.app.client.api_url, path)
@@ -315,6 +323,17 @@ class ModelAPI(object):
         return json.loads(response.content)
 
     def create(self, obj_data):
+        """Creates a model object given it's primary key and new object data;
+        Makes a 'POST' method request to the Bulk API
+
+        Args:
+            pk (str): primary key of object
+            obj_data (dict): new data to create the object with
+
+        Returns:
+            dictionary object of the model data
+
+        """
         path = self.app.client.model_api_urls[self.app.app_label][
             self.model_name]
         url = urljoin(self.app.client.api_url, path)
@@ -335,6 +354,16 @@ class ModelAPI(object):
         return json.loads(response.content)
 
     def get(self, pk):
+        """Gets a model object given it's primary key; Makes a 'GET' method
+        request to the Bulk API
+
+        Args:
+            pk (str): primary key of object
+
+        Returns:
+            dictionary object of the model data
+
+        """
         path = self.app.client.model_api_urls[self.app.app_label][
             self.model_name]
         url = urljoin(self.app.client.api_url, os.path.join(path, pk))
@@ -346,13 +375,21 @@ class ModelAPI(object):
         return json.loads(response.content)
 
     def update(self, pk, obj_data):
+        """Updates a model object given it's primary key and new object data;
+        Makes a 'PATCH' method request to the Bulk API
+
+        Args:
+            pk (str): primary key of object
+            obj_data (dict): new data to update the object with
+
+        Returns:
+            success status code (200)
+
+        """
         path = self.app.client.model_api_urls[self.app.app_label][
             self.model_name]
         url = urljoin(self.app.client.api_url, os.path.join(path, pk))
-        obj = self.get(pk)
-        update_data = {k: obj_data.get(k, v) for k, v in obj.items()}
-        data = json.dumps(update_data)
-        # data = json.dumps(obj_data)
+        data = json.dumps(obj_data)
         kwargs = {
             'data': data,
             'headers': {
@@ -369,6 +406,16 @@ class ModelAPI(object):
         return response.status_code
 
     def delete(self, pk):
+        """Deletes a model object given it's primary key; Makes a 'DELETE'
+        method request to the Bulk API
+
+        Args:
+            pk (str): primary key of object
+
+        Returns:
+            success status code (204)
+
+        """
         path = self.app.client.model_api_urls[self.app.app_label][
             self.model_name]
         url = urljoin(self.app.client.api_url, os.path.join(path, pk))

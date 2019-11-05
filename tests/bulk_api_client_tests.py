@@ -489,14 +489,3 @@ def test_model_api_delete(model_api):
         obj = model_api.delete('1016')
         fn.assert_called_with('DELETE', url, params={})
     assert obj == response.status_code
-
-
-def test_update():
-    c = Client('38486ffedf3b539722c6b1082947ee8fd6809258',
-               api_url='http://localhost:8000/bulk/api/')
-    data = {
-        "text": "fijnrfj",
-        "date_time": "2011-11-11T07:28:34.088291Z",
-        "integer": 22
-    }
-    c.app('bulk_importer').model('examplefortesting').update('1026', data)
