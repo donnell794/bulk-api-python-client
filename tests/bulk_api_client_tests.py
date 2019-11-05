@@ -474,7 +474,7 @@ def test_model_api_update(model_api):
     response.status_code = 200
     with mock.patch.object(Client, 'request', return_value=response) as fn:
         obj = model_api.update('1016', obj_data)
-        fn.assert_called_with('PUT', url, params={}, **kwargs)
+        fn.assert_called_with('PATCH', url, params={}, **kwargs)
     assert obj == response.status_code
 
 
