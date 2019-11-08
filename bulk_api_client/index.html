@@ -326,7 +326,7 @@ class ModelAPI(object):
 
         return df, pages_left
 
-    def list(self):
+    def list(self, page=None):
         &#34;&#34;&#34;Lists all model object of a given model; Makes a &#39;GET&#39; method request
         to the Bulk API
 
@@ -342,7 +342,7 @@ class ModelAPI(object):
         response = self.app.client.request(
             &#39;GET&#39;,
             url,
-            params={}
+            params={&#39;page&#39;: page}
         )
         return json.loads(response.content)
 
@@ -991,7 +991,7 @@ dictionary.</p>
 
         return df, pages_left
 
-    def list(self):
+    def list(self, page=None):
         &#34;&#34;&#34;Lists all model object of a given model; Makes a &#39;GET&#39; method request
         to the Bulk API
 
@@ -1007,7 +1007,7 @@ dictionary.</p>
         response = self.app.client.request(
             &#39;GET&#39;,
             url,
-            params={}
+            params={&#39;page&#39;: page}
         )
         return json.loads(response.content)
 
@@ -1254,7 +1254,7 @@ request to the Bulk API</p>
 </details>
 </dd>
 <dt id="bulk_api_client.ModelAPI.list"><code class="name flex">
-<span>def <span class="ident">list</span></span>(<span>self)</span>
+<span>def <span class="ident">list</span></span>(<span>self, page=None)</span>
 </code></dt>
 <dd>
 <section class="desc"><p>Lists all model object of a given model; Makes a 'GET' method request
@@ -1267,7 +1267,7 @@ to the Bulk API</p>
 </dl></section>
 <details class="source">
 <summary>Source code</summary>
-<pre><code class="python">def list(self):
+<pre><code class="python">def list(self, page=None):
     &#34;&#34;&#34;Lists all model object of a given model; Makes a &#39;GET&#39; method request
     to the Bulk API
 
@@ -1283,7 +1283,7 @@ to the Bulk API</p>
     response = self.app.client.request(
         &#39;GET&#39;,
         url,
-        params={}
+        params={&#39;page&#39;: page}
     )
     return json.loads(response.content)</code></pre>
 </details>
