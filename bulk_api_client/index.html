@@ -230,7 +230,7 @@ class ModelAPI(object):
         current_page = 1
         pages_left = 1
         while pages_left &gt; 0:
-            df, pages_left = self.query_request(
+            df, pages_left = self._query(
                 fields=fields,
                 filter=filter,
                 order=order,
@@ -241,8 +241,8 @@ class ModelAPI(object):
             dataframes.append(df)
         return pandas.concat(dataframes)
 
-    def query_request(self, fields=None, filter=None, order=None, page=None,
-                      page_size=None):
+    def _query(self, fields=None, filter=None, order=None, page=None,
+               page_size=None):
         &#34;&#34;&#34;Queries to create a Pandas DataFrame for given queryset. The default
         query may be obtained by calling the function, without passing
         any parameters.
@@ -326,7 +326,7 @@ class ModelAPI(object):
 
         return df, pages_left
 
-    def list(self, page=None):
+    def _list(self, page=None):
         &#34;&#34;&#34;Lists all model object of a given model; Makes a &#39;GET&#39; method request
         to the Bulk API
 
@@ -346,7 +346,7 @@ class ModelAPI(object):
         )
         return json.loads(response.content)
 
-    def create(self, obj_data):
+    def _create(self, obj_data):
         &#34;&#34;&#34;Creates a model object given it&#39;s primary key and new object data;
         Makes a &#39;POST&#39; method request to the Bulk API
 
@@ -377,7 +377,7 @@ class ModelAPI(object):
         )
         return json.loads(response.content)
 
-    def get(self, pk):
+    def _get(self, pk):
         &#34;&#34;&#34;Gets a model object given it&#39;s primary key; Makes a &#39;GET&#39; method
         request to the Bulk API
 
@@ -398,7 +398,7 @@ class ModelAPI(object):
         )
         return json.loads(response.content)
 
-    def update(self, pk, obj_data, patch=True):
+    def _update(self, pk, obj_data, patch=True):
         &#34;&#34;&#34;Updates a model object given it&#39;s primary key and new object data;
         Makes a &#39;PATCH&#39; method request to the Bulk API
 
@@ -433,7 +433,7 @@ class ModelAPI(object):
         )
         return response.status_code
 
-    def delete(self, pk):
+    def _delete(self, pk):
         &#34;&#34;&#34;Deletes a model object given it&#39;s primary key; Makes a &#39;DELETE&#39;
         method request to the Bulk API
 
@@ -895,7 +895,7 @@ dictionary.</p>
         current_page = 1
         pages_left = 1
         while pages_left &gt; 0:
-            df, pages_left = self.query_request(
+            df, pages_left = self._query(
                 fields=fields,
                 filter=filter,
                 order=order,
@@ -906,8 +906,8 @@ dictionary.</p>
             dataframes.append(df)
         return pandas.concat(dataframes)
 
-    def query_request(self, fields=None, filter=None, order=None, page=None,
-                      page_size=None):
+    def _query(self, fields=None, filter=None, order=None, page=None,
+               page_size=None):
         &#34;&#34;&#34;Queries to create a Pandas DataFrame for given queryset. The default
         query may be obtained by calling the function, without passing
         any parameters.
@@ -991,7 +991,7 @@ dictionary.</p>
 
         return df, pages_left
 
-    def list(self, page=None):
+    def _list(self, page=None):
         &#34;&#34;&#34;Lists all model object of a given model; Makes a &#39;GET&#39; method request
         to the Bulk API
 
@@ -1011,7 +1011,7 @@ dictionary.</p>
         )
         return json.loads(response.content)
 
-    def create(self, obj_data):
+    def _create(self, obj_data):
         &#34;&#34;&#34;Creates a model object given it&#39;s primary key and new object data;
         Makes a &#39;POST&#39; method request to the Bulk API
 
@@ -1042,7 +1042,7 @@ dictionary.</p>
         )
         return json.loads(response.content)
 
-    def get(self, pk):
+    def _get(self, pk):
         &#34;&#34;&#34;Gets a model object given it&#39;s primary key; Makes a &#39;GET&#39; method
         request to the Bulk API
 
@@ -1063,7 +1063,7 @@ dictionary.</p>
         )
         return json.loads(response.content)
 
-    def update(self, pk, obj_data, patch=True):
+    def _update(self, pk, obj_data, patch=True):
         &#34;&#34;&#34;Updates a model object given it&#39;s primary key and new object data;
         Makes a &#39;PATCH&#39; method request to the Bulk API
 
@@ -1098,7 +1098,7 @@ dictionary.</p>
         )
         return response.status_code
 
-    def delete(self, pk):
+    def _delete(self, pk):
         &#34;&#34;&#34;Deletes a model object given it&#39;s primary key; Makes a &#39;DELETE&#39;
         method request to the Bulk API
 
@@ -1121,173 +1121,6 @@ dictionary.</p>
 </details>
 <h3>Methods</h3>
 <dl>
-<dt id="bulk_api_client.ModelAPI.create"><code class="name flex">
-<span>def <span class="ident">create</span></span>(<span>self, obj_data)</span>
-</code></dt>
-<dd>
-<section class="desc"><p>Creates a model object given it's primary key and new object data;
-Makes a 'POST' method request to the Bulk API</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>pk</code></strong> :&ensp;<code>str</code></dt>
-<dd>primary key of object</dd>
-<dt><strong><code>obj_data</code></strong> :&ensp;<code>dict</code></dt>
-<dd>new data to create the object with</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><code>dictionary</code> <code>object</code> of <code>the</code> <code>model</code> <code>data</code></dt>
-<dd>&nbsp;</dd>
-</dl></section>
-<details class="source">
-<summary>Source code</summary>
-<pre><code class="python">def create(self, obj_data):
-    &#34;&#34;&#34;Creates a model object given it&#39;s primary key and new object data;
-    Makes a &#39;POST&#39; method request to the Bulk API
-
-    Args:
-        pk (str): primary key of object
-        obj_data (dict): new data to create the object with
-
-    Returns:
-        dictionary object of the model data
-
-    &#34;&#34;&#34;
-    path = self.app.client.model_api_urls[self.app.app_label][
-        self.model_name]
-    url = urljoin(self.app.client.api_url, path)
-    data = json.dumps(obj_data)
-    kwargs = {
-        &#39;data&#39;: data,
-        &#39;headers&#39;: {
-            &#39;Content-Type&#39;: &#39;application/json&#39;,
-            &#39;Accept&#39;: &#39;application/json&#39;
-        }
-    }
-    response = self.app.client.request(
-        &#39;POST&#39;,
-        url,
-        params={},
-        **kwargs
-    )
-    return json.loads(response.content)</code></pre>
-</details>
-</dd>
-<dt id="bulk_api_client.ModelAPI.delete"><code class="name flex">
-<span>def <span class="ident">delete</span></span>(<span>self, pk)</span>
-</code></dt>
-<dd>
-<section class="desc"><p>Deletes a model object given it's primary key; Makes a 'DELETE'
-method request to the Bulk API</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>pk</code></strong> :&ensp;<code>str</code></dt>
-<dd>primary key of object</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><code>success</code> <code>status</code> <code>code</code> (<code>204</code>)</dt>
-<dd>&nbsp;</dd>
-</dl></section>
-<details class="source">
-<summary>Source code</summary>
-<pre><code class="python">def delete(self, pk):
-    &#34;&#34;&#34;Deletes a model object given it&#39;s primary key; Makes a &#39;DELETE&#39;
-    method request to the Bulk API
-
-    Args:
-        pk (str): primary key of object
-
-    Returns:
-        success status code (204)
-
-    &#34;&#34;&#34;
-    path = self.app.client.model_api_urls[self.app.app_label][
-        self.model_name]
-    url = urljoin(self.app.client.api_url, os.path.join(path, pk))
-    response = self.app.client.request(
-        &#39;DELETE&#39;,
-        url,
-        params={}
-    )
-    return response.status_code</code></pre>
-</details>
-</dd>
-<dt id="bulk_api_client.ModelAPI.get"><code class="name flex">
-<span>def <span class="ident">get</span></span>(<span>self, pk)</span>
-</code></dt>
-<dd>
-<section class="desc"><p>Gets a model object given it's primary key; Makes a 'GET' method
-request to the Bulk API</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>pk</code></strong> :&ensp;<code>str</code></dt>
-<dd>primary key of object</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><code>dictionary</code> <code>object</code> of <code>the</code> <code>model</code> <code>data</code></dt>
-<dd>&nbsp;</dd>
-</dl></section>
-<details class="source">
-<summary>Source code</summary>
-<pre><code class="python">def get(self, pk):
-    &#34;&#34;&#34;Gets a model object given it&#39;s primary key; Makes a &#39;GET&#39; method
-    request to the Bulk API
-
-    Args:
-        pk (str): primary key of object
-
-    Returns:
-        dictionary object of the model data
-
-    &#34;&#34;&#34;
-    path = self.app.client.model_api_urls[self.app.app_label][
-        self.model_name]
-    url = urljoin(self.app.client.api_url, os.path.join(path, pk))
-    response = self.app.client.request(
-        &#39;GET&#39;,
-        url,
-        params={}
-    )
-    return json.loads(response.content)</code></pre>
-</details>
-</dd>
-<dt id="bulk_api_client.ModelAPI.list"><code class="name flex">
-<span>def <span class="ident">list</span></span>(<span>self, page=None)</span>
-</code></dt>
-<dd>
-<section class="desc"><p>Lists all model object of a given model; Makes a 'GET' method request
-to the Bulk API</p>
-<p>Args:</p>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><code>list</code> of <code>dictionary</code> <code>objects</code> of <code>the</code> <code>model</code> <code>data</code></dt>
-<dd>&nbsp;</dd>
-</dl></section>
-<details class="source">
-<summary>Source code</summary>
-<pre><code class="python">def list(self, page=None):
-    &#34;&#34;&#34;Lists all model object of a given model; Makes a &#39;GET&#39; method request
-    to the Bulk API
-
-    Args:
-
-    Returns:
-        list of dictionary objects of the model data
-
-    &#34;&#34;&#34;
-    path = self.app.client.model_api_urls[self.app.app_label][
-        self.model_name]
-    url = urljoin(self.app.client.api_url, path)
-    response = self.app.client.request(
-        &#39;GET&#39;,
-        url,
-        params={&#39;page&#39;: page}
-    )
-    return json.loads(response.content)</code></pre>
-</details>
-</dd>
 <dt id="bulk_api_client.ModelAPI.query"><code class="name flex">
 <span>def <span class="ident">query</span></span>(<span>self, fields=None, filter=None, order=None, page_size=None)</span>
 </code></dt>
@@ -1332,7 +1165,7 @@ any parameters.</p>
     current_page = 1
     pages_left = 1
     while pages_left &gt; 0:
-        df, pages_left = self.query_request(
+        df, pages_left = self._query(
             fields=fields,
             filter=filter,
             order=order,
@@ -1342,176 +1175,6 @@ any parameters.</p>
         current_page += 1
         dataframes.append(df)
     return pandas.concat(dataframes)</code></pre>
-</details>
-</dd>
-<dt id="bulk_api_client.ModelAPI.query_request"><code class="name flex">
-<span>def <span class="ident">query_request</span></span>(<span>self, fields=None, filter=None, order=None, page=None, page_size=None)</span>
-</code></dt>
-<dd>
-<section class="desc"><p>Queries to create a Pandas DataFrame for given queryset. The default
-query may be obtained by calling the function, without passing
-any parameters.</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>fields</code></strong> :&ensp;<code>list</code></dt>
-<dd>list of specified fields for the fields query</dd>
-<dt><strong><code>filter</code></strong> :&ensp;<code>str</code></dt>
-<dd>filter for the filter query</dd>
-<dt><strong><code>order</code></strong> :&ensp;<code>str</code></dt>
-<dd>order for the ordering query</dd>
-<dt><strong><code>page</code></strong> :&ensp;<code>str</code></dt>
-<dd>page number for the page query; Default: 1</dd>
-<dt><strong><code>page_size</code></strong> :&ensp;<code>str</code></dt>
-<dd>page size for the page_size query; Default: 10,000</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><code>pandas</code> <code>dataframe</code></dt>
-<dd>&nbsp;</dd>
-</dl></section>
-<details class="source">
-<summary>Source code</summary>
-<pre><code class="python">def query_request(self, fields=None, filter=None, order=None, page=None,
-                  page_size=None):
-    &#34;&#34;&#34;Queries to create a Pandas DataFrame for given queryset. The default
-    query may be obtained by calling the function, without passing
-    any parameters.
-
-    Args:
-        fields (list): list of specified fields for the fields query
-        filter (str): filter for the filter query
-        order (str): order for the ordering query
-        page (str): page number for the page query; Default: 1
-        page_size (str): page size for the page_size query; Default: 10,000
-
-    Returns:
-        pandas dataframe
-
-    &#34;&#34;&#34;
-
-    if fields is not None:
-        if not isinstance(fields, list):
-            raise TypeError({&#39;detail&#39;: &#34;fields arguement must be list&#34;})
-        fields = &#39;,&#39;.join(fields)
-    if filter is not None:
-        if not isinstance(filter, str):
-            raise filter_error
-        q_list = re.split(r&#34;(\||\&amp;)&#34;, filter)
-        for q_val in q_list:
-            if not is_kv(q_val) and not re.fullmatch(r&#39;(^[\||\&amp;]$)&#39;, q_val):
-                raise filter_error
-    if order is not None:
-        if not isinstance(order, str):
-            raise TypeError({&#39;detail&#39;: &#34;order must be a string&#34;})
-    if page is not None and (
-            not isinstance(page, int) or page &lt;= 0):
-        raise TypeError({&#39;detail&#39;: &#34;page must be a positive integer&#34;})
-    if page is None:
-        page = 1
-    if page_size is not None and (
-            not isinstance(page_size, int) or page_size &lt;= 0):
-        raise TypeError({&#39;detail&#39;: &#34;page size must be a positive integer&#34;})
-
-    url_path = self.app.client.model_api_urls[self.app.app_label][
-        self.model_name]
-    url = urljoin(self.app.client.api_url, os.path.join(url_path, &#39;query&#39;))
-    params = {&#39;fields&#39;: fields, &#39;filter&#39;: filter,
-              &#39;ordering&#39;: order, &#39;page&#39;: page, &#39;page_size&#39;: page_size}
-    url_hash = str(hash(url_path) + sys.maxsize + 1)
-    path = os.path.join(self.app.client.temp_dir, url_hash)
-    os.makedirs(path, exist_ok=True)
-    query_hash = &#34;{}.csv&#34;.format(
-        hash(json.dumps(params, sort_keys=True))
-        + sys.maxsize
-        + 1
-    )
-    pageless_params = {&#39;fields&#39;: fields, &#39;filter&#39;: filter,
-                       &#39;ordering&#39;: order, &#39;page_size&#39;: page_size}
-    page_hash = &#34;{}.count&#34;.format(
-        hash(json.dumps(pageless_params, sort_keys=True))
-        + sys.maxsize
-        + 1
-    )
-    csv_path = os.path.join(path, query_hash)
-    page_path = os.path.join(path, page_hash)
-    expiration_time = (datetime.now() - timedelta(hours=2)).timestamp()
-    if not os.path.exists(csv_path) or (
-            os.path.getmtime(csv_path) &lt; expiration_time):
-        with self.app.client.request(&#39;GET&#39;, url, params=params) as response:
-            pages_left = int(response.headers[&#39;page_count&#39;]) - page
-            with open(csv_path, &#39;wb&#39;) as f:
-                shutil.copyfileobj(response.raw, f)
-            with open(page_path, &#39;w&#39;) as f:
-                f.write(str(response.headers[&#39;page_count&#39;]))
-    else:
-        with open(page_path, &#39;rb&#39;) as f:
-            pages_left = int(f.readline()) - page
-
-    df = pandas.concat(
-        pandas.read_csv(
-            csv_path,
-            chunksize=CSV_CHUNKSIZE
-        ),
-        ignore_index=True)
-
-    return df, pages_left</code></pre>
-</details>
-</dd>
-<dt id="bulk_api_client.ModelAPI.update"><code class="name flex">
-<span>def <span class="ident">update</span></span>(<span>self, pk, obj_data, patch=True)</span>
-</code></dt>
-<dd>
-<section class="desc"><p>Updates a model object given it's primary key and new object data;
-Makes a 'PATCH' method request to the Bulk API</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>pk</code></strong> :&ensp;<code>str</code></dt>
-<dd>primary key of object</dd>
-<dt><strong><code>obj_data</code></strong> :&ensp;<code>dict</code></dt>
-<dd>new data to update the object with</dd>
-</dl>
-<p>patch(bool): partial update (default: True)</p>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><code>success</code> <code>status</code> <code>code</code> (<code>200</code>)</dt>
-<dd>&nbsp;</dd>
-</dl></section>
-<details class="source">
-<summary>Source code</summary>
-<pre><code class="python">def update(self, pk, obj_data, patch=True):
-    &#34;&#34;&#34;Updates a model object given it&#39;s primary key and new object data;
-    Makes a &#39;PATCH&#39; method request to the Bulk API
-
-    Args:
-        pk (str): primary key of object
-        obj_data (dict): new data to update the object with
-        patch(bool): partial update (default: True)
-
-    Returns:
-        success status code (200)
-
-    &#34;&#34;&#34;
-    path = self.app.client.model_api_urls[self.app.app_label][
-        self.model_name]
-    url = urljoin(self.app.client.api_url, os.path.join(path, pk))
-    data = json.dumps(obj_data)
-    kwargs = {
-        &#39;data&#39;: data,
-        &#39;headers&#39;: {
-            &#39;Content-Type&#39;: &#39;application/json&#39;,
-            &#39;Accept&#39;: &#39;application/json&#39;
-        }
-    }
-    method = &#39;PATCH&#39;
-    if not patch:
-        method = &#39;PUT&#39;
-    response = self.app.client.request(
-        method,
-        url,
-        params={},
-        **kwargs
-    )
-    return response.status_code</code></pre>
 </details>
 </dd>
 </dl>
@@ -1554,14 +1217,8 @@ Makes a 'PATCH' method request to the Bulk API</p>
 </li>
 <li>
 <h4><code><a title="bulk_api_client.ModelAPI" href="#bulk_api_client.ModelAPI">ModelAPI</a></code></h4>
-<ul class="two-column">
-<li><code><a title="bulk_api_client.ModelAPI.create" href="#bulk_api_client.ModelAPI.create">create</a></code></li>
-<li><code><a title="bulk_api_client.ModelAPI.delete" href="#bulk_api_client.ModelAPI.delete">delete</a></code></li>
-<li><code><a title="bulk_api_client.ModelAPI.get" href="#bulk_api_client.ModelAPI.get">get</a></code></li>
-<li><code><a title="bulk_api_client.ModelAPI.list" href="#bulk_api_client.ModelAPI.list">list</a></code></li>
+<ul class="">
 <li><code><a title="bulk_api_client.ModelAPI.query" href="#bulk_api_client.ModelAPI.query">query</a></code></li>
-<li><code><a title="bulk_api_client.ModelAPI.query_request" href="#bulk_api_client.ModelAPI.query_request">query_request</a></code></li>
-<li><code><a title="bulk_api_client.ModelAPI.update" href="#bulk_api_client.ModelAPI.update">update</a></code></li>
 </ul>
 </li>
 </ul>
