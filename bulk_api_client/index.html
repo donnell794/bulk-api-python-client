@@ -28,6 +28,9 @@ import requests
 import requests_cache
 import json
 import re
+import shutil
+import sys
+import yaml
 from io import BytesIO
 from urllib.parse import urljoin
 from tempfile import gettempdir
@@ -84,6 +87,14 @@ class Client(object):
         &#34;&#34;&#34;
         self.token = token
         self.api_url = api_url
+        yaml_res = self.request(
+            method=&#39;GET&#39;,
+            url=urljoin(self.api_url, &#39;swagger.yaml&#39;),
+            params={},
+        )
+        yaml_data = yaml.safe_load(yaml_res.raw)
+        self.definitions = yaml_data[&#39;definitions&#39;]
+        self.paths = yaml_data[&#39;paths&#39;]
         requests_cache.install_cache(
             &#39;bulk-api-cache&#39;,
             backend=requests_cache.backends.sqlite.DbCache(
@@ -615,6 +626,14 @@ Requies a user token with access to data-warehouse</p>
         &#34;&#34;&#34;
         self.token = token
         self.api_url = api_url
+        yaml_res = self.request(
+            method=&#39;GET&#39;,
+            url=urljoin(self.api_url, &#39;swagger.yaml&#39;),
+            params={},
+        )
+        yaml_data = yaml.safe_load(yaml_res.raw)
+        self.definitions = yaml_data[&#39;definitions&#39;]
+        self.paths = yaml_data[&#39;paths&#39;]
         requests_cache.install_cache(
             &#39;bulk-api-cache&#39;,
             backend=requests_cache.backends.sqlite.DbCache(
