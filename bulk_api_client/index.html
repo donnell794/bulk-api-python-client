@@ -25,11 +25,10 @@
 <pre><code class="python">import os
 import pandas
 import requests
+import requests_cache
 import json
 import re
-import shutil
-import sys
-from datetime import datetime, timedelta
+from io import BytesIO
 from urllib.parse import urljoin
 from tempfile import gettempdir
 
@@ -72,20 +71,26 @@ class Client(object):
 
     def __init__(self,
                  token,
-                 api_url=&#39;https://data-warehouse.pivot/bulk/api/&#39;):
+                 api_url=&#39;https://data-warehouse.pivot/bulk/api/&#39;,
+                 expiration_time=7200):
         &#34;&#34;&#34;API Client object for bulk_importer to handle app and model requests.
         Requies a user token with access to data-warehouse
 
         Args:
             token (str): user token with permissions to access the API
             api_url (str): base url for api request; defaults to data_warehouse
+            expiration_time (int): denote time requests expire from cache
 
         &#34;&#34;&#34;
         self.token = token
         self.api_url = api_url
-        self.temp_dir = os.path.join(gettempdir(), &#39;bulk-api-cache&#39;)
-        &#34;&#34;&#34;Temp directory to host files created by the client&#34;&#34;&#34;
-        os.makedirs(self.temp_dir, exist_ok=True)
+        requests_cache.install_cache(
+            &#39;bulk-api-cache&#39;,
+            backend=requests_cache.backends.sqlite.DbCache(
+                location=os.path.join(gettempdir(), &#39;bulk-api-cache&#39;)
+            ),
+            expire_after=expiration_time
+        )
 
     def request(self, method, url, params, *args, **kwargs):
         &#34;&#34;&#34;Request function to construct and send a request. Uses the Requests
@@ -122,15 +127,9 @@ class Client(object):
         return response
 
     def clear_cache(self):
-        &#34;&#34;&#34;Empty the temp directory for a clean working directory&#34;&#34;&#34;
+        &#34;&#34;&#34;Empty requests cache&#34;&#34;&#34;
 
-        if os.path.exists(self.temp_dir):
-            for path in os.listdir(self.temp_dir):
-                path = os.path.join(self.temp_dir, path)
-                if os.path.isdir(path):
-                    shutil.rmtree(path)
-                if os.path.isfile(path):
-                    os.unlink(path)
+        requests_cache.clear()
 
     def app(self, app_label):
         &#34;&#34;&#34;Creates AppAPI object from a given app label
@@ -287,42 +286,17 @@ class ModelAPI(object):
         url = urljoin(self.app.client.api_url, os.path.join(url_path, &#39;query&#39;))
         params = {&#39;fields&#39;: fields, &#39;filter&#39;: filter,
                   &#39;ordering&#39;: order, &#39;page&#39;: page, &#39;page_size&#39;: page_size}
-        url_hash = str(hash(url_path) + sys.maxsize + 1)
-        path = os.path.join(self.app.client.temp_dir, url_hash)
-        os.makedirs(path, exist_ok=True)
-        query_hash = &#34;{}.csv&#34;.format(
-            hash(json.dumps(params, sort_keys=True))
-            + sys.maxsize
-            + 1
-        )
-        pageless_params = {&#39;fields&#39;: fields, &#39;filter&#39;: filter,
-                           &#39;ordering&#39;: order, &#39;page_size&#39;: page_size}
-        page_hash = &#34;{}.count&#34;.format(
-            hash(json.dumps(pageless_params, sort_keys=True))
-            + sys.maxsize
-            + 1
-        )
-        csv_path = os.path.join(path, query_hash)
-        page_path = os.path.join(path, page_hash)
-        expiration_time = (datetime.now() - timedelta(hours=2)).timestamp()
-        if not os.path.exists(csv_path) or (
-                os.path.getmtime(csv_path) &lt; expiration_time):
-            with self.app.client.request(&#39;GET&#39;, url, params=params) as response:
-                pages_left = int(response.headers[&#39;page_count&#39;]) - page
-                with open(csv_path, &#39;wb&#39;) as f:
-                    shutil.copyfileobj(response.raw, f)
-                with open(page_path, &#39;w&#39;) as f:
-                    f.write(str(response.headers[&#39;page_count&#39;]))
-        else:
-            with open(page_path, &#39;rb&#39;) as f:
-                pages_left = int(f.readline()) - page
 
-        df = pandas.concat(
-            pandas.read_csv(
-                csv_path,
-                chunksize=CSV_CHUNKSIZE
-            ),
-            ignore_index=True)
+        with self.app.client.request(&#39;GET&#39;, url, params=params) as response:
+            pages_left = int(response.headers[&#39;page_count&#39;]) - page
+
+            df = pandas.concat(
+                pandas.read_csv(
+                    BytesIO(response.content),
+                    chunksize=CSV_CHUNKSIZE
+                ),
+                ignore_index=True
+            )
 
         return df, pages_left
 
@@ -602,7 +576,7 @@ Importer, the response cached in app_api_urls dictionary.</p>
 </dd>
 <dt id="bulk_api_client.Client"><code class="flex name class">
 <span>class <span class="ident">Client</span></span>
-<span>(</span><span>token, api_url='https://data-warehouse.pivot/bulk/api/')</span>
+<span>(</span><span>token, api_url='https://data-warehouse.pivot/bulk/api/', expiration_time=7200)</span>
 </code></dt>
 <dd>
 <section class="desc"><p>API Client object for bulk_importer to handle app and model requests.
@@ -613,6 +587,8 @@ Requies a user token with access to data-warehouse</p>
 <dd>user token with permissions to access the API</dd>
 <dt><strong><code>api_url</code></strong> :&ensp;<code>str</code></dt>
 <dd>base url for api request; defaults to data_warehouse</dd>
+<dt><strong><code>expiration_time</code></strong> :&ensp;<code>int</code></dt>
+<dd>denote time requests expire from cache</dd>
 </dl></section>
 <details class="source">
 <summary>Source code</summary>
@@ -626,20 +602,26 @@ Requies a user token with access to data-warehouse</p>
 
     def __init__(self,
                  token,
-                 api_url=&#39;https://data-warehouse.pivot/bulk/api/&#39;):
+                 api_url=&#39;https://data-warehouse.pivot/bulk/api/&#39;,
+                 expiration_time=7200):
         &#34;&#34;&#34;API Client object for bulk_importer to handle app and model requests.
         Requies a user token with access to data-warehouse
 
         Args:
             token (str): user token with permissions to access the API
             api_url (str): base url for api request; defaults to data_warehouse
+            expiration_time (int): denote time requests expire from cache
 
         &#34;&#34;&#34;
         self.token = token
         self.api_url = api_url
-        self.temp_dir = os.path.join(gettempdir(), &#39;bulk-api-cache&#39;)
-        &#34;&#34;&#34;Temp directory to host files created by the client&#34;&#34;&#34;
-        os.makedirs(self.temp_dir, exist_ok=True)
+        requests_cache.install_cache(
+            &#39;bulk-api-cache&#39;,
+            backend=requests_cache.backends.sqlite.DbCache(
+                location=os.path.join(gettempdir(), &#39;bulk-api-cache&#39;)
+            ),
+            expire_after=expiration_time
+        )
 
     def request(self, method, url, params, *args, **kwargs):
         &#34;&#34;&#34;Request function to construct and send a request. Uses the Requests
@@ -676,15 +658,9 @@ Requies a user token with access to data-warehouse</p>
         return response
 
     def clear_cache(self):
-        &#34;&#34;&#34;Empty the temp directory for a clean working directory&#34;&#34;&#34;
+        &#34;&#34;&#34;Empty requests cache&#34;&#34;&#34;
 
-        if os.path.exists(self.temp_dir):
-            for path in os.listdir(self.temp_dir):
-                path = os.path.join(self.temp_dir, path)
-                if os.path.isdir(path):
-                    shutil.rmtree(path)
-                if os.path.isfile(path):
-                    os.unlink(path)
+        requests_cache.clear()
 
     def app(self, app_label):
         &#34;&#34;&#34;Creates AppAPI object from a given app label
@@ -709,13 +685,6 @@ AppAPI object</p></section>
 <dd>
 <section class="desc"><p>Dict of Bulk Importer model urls. Updated with the initialization of a
 ModelAPI object</p></section>
-</dd>
-</dl>
-<h3>Instance variables</h3>
-<dl>
-<dt id="bulk_api_client.Client.temp_dir"><code class="name">var <span class="ident">temp_dir</span></code></dt>
-<dd>
-<section class="desc"><p>Temp directory to host files created by the client</p></section>
 </dd>
 </dl>
 <h3>Methods</h3>
@@ -754,19 +723,13 @@ ModelAPI object</p></section>
 <span>def <span class="ident">clear_cache</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Empty the temp directory for a clean working directory</p></section>
+<section class="desc"><p>Empty requests cache</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def clear_cache(self):
-    &#34;&#34;&#34;Empty the temp directory for a clean working directory&#34;&#34;&#34;
+    &#34;&#34;&#34;Empty requests cache&#34;&#34;&#34;
 
-    if os.path.exists(self.temp_dir):
-        for path in os.listdir(self.temp_dir):
-            path = os.path.join(self.temp_dir, path)
-            if os.path.isdir(path):
-                shutil.rmtree(path)
-            if os.path.isfile(path):
-                os.unlink(path)</code></pre>
+    requests_cache.clear()</code></pre>
 </details>
 </dd>
 <dt id="bulk_api_client.Client.request"><code class="name flex">
@@ -952,42 +915,17 @@ dictionary.</p>
         url = urljoin(self.app.client.api_url, os.path.join(url_path, &#39;query&#39;))
         params = {&#39;fields&#39;: fields, &#39;filter&#39;: filter,
                   &#39;ordering&#39;: order, &#39;page&#39;: page, &#39;page_size&#39;: page_size}
-        url_hash = str(hash(url_path) + sys.maxsize + 1)
-        path = os.path.join(self.app.client.temp_dir, url_hash)
-        os.makedirs(path, exist_ok=True)
-        query_hash = &#34;{}.csv&#34;.format(
-            hash(json.dumps(params, sort_keys=True))
-            + sys.maxsize
-            + 1
-        )
-        pageless_params = {&#39;fields&#39;: fields, &#39;filter&#39;: filter,
-                           &#39;ordering&#39;: order, &#39;page_size&#39;: page_size}
-        page_hash = &#34;{}.count&#34;.format(
-            hash(json.dumps(pageless_params, sort_keys=True))
-            + sys.maxsize
-            + 1
-        )
-        csv_path = os.path.join(path, query_hash)
-        page_path = os.path.join(path, page_hash)
-        expiration_time = (datetime.now() - timedelta(hours=2)).timestamp()
-        if not os.path.exists(csv_path) or (
-                os.path.getmtime(csv_path) &lt; expiration_time):
-            with self.app.client.request(&#39;GET&#39;, url, params=params) as response:
-                pages_left = int(response.headers[&#39;page_count&#39;]) - page
-                with open(csv_path, &#39;wb&#39;) as f:
-                    shutil.copyfileobj(response.raw, f)
-                with open(page_path, &#39;w&#39;) as f:
-                    f.write(str(response.headers[&#39;page_count&#39;]))
-        else:
-            with open(page_path, &#39;rb&#39;) as f:
-                pages_left = int(f.readline()) - page
 
-        df = pandas.concat(
-            pandas.read_csv(
-                csv_path,
-                chunksize=CSV_CHUNKSIZE
-            ),
-            ignore_index=True)
+        with self.app.client.request(&#39;GET&#39;, url, params=params) as response:
+            pages_left = int(response.headers[&#39;page_count&#39;]) - page
+
+            df = pandas.concat(
+                pandas.read_csv(
+                    BytesIO(response.content),
+                    chunksize=CSV_CHUNKSIZE
+                ),
+                ignore_index=True
+            )
 
         return df, pages_left
 
@@ -1206,13 +1144,12 @@ any parameters.</p>
 </li>
 <li>
 <h4><code><a title="bulk_api_client.Client" href="#bulk_api_client.Client">Client</a></code></h4>
-<ul class="two-column">
+<ul class="">
 <li><code><a title="bulk_api_client.Client.app" href="#bulk_api_client.Client.app">app</a></code></li>
 <li><code><a title="bulk_api_client.Client.app_api_urls" href="#bulk_api_client.Client.app_api_urls">app_api_urls</a></code></li>
 <li><code><a title="bulk_api_client.Client.clear_cache" href="#bulk_api_client.Client.clear_cache">clear_cache</a></code></li>
 <li><code><a title="bulk_api_client.Client.model_api_urls" href="#bulk_api_client.Client.model_api_urls">model_api_urls</a></code></li>
 <li><code><a title="bulk_api_client.Client.request" href="#bulk_api_client.Client.request">request</a></code></li>
-<li><code><a title="bulk_api_client.Client.temp_dir" href="#bulk_api_client.Client.temp_dir">temp_dir</a></code></li>
 </ul>
 </li>
 <li>
