@@ -362,7 +362,7 @@ class ModelAPI(object):
         )
         return json.loads(response.content)
 
-    def _get(self, pk):
+    def _get(self, uri):
         &#34;&#34;&#34;Gets a model object given it&#39;s primary key; Makes a &#39;GET&#39; method
         request to the Bulk API
 
@@ -373,9 +373,8 @@ class ModelAPI(object):
             dictionary object of the model data
 
         &#34;&#34;&#34;
-        path = self.app.client.model_api_urls[self.app.app_label][
-            self.model_name]
-        url = urljoin(self.app.client.api_url, os.path.join(path, pk))
+
+        url = urljoin(self.app.client.api_url, uri)
         response = self.app.client.request(
             &#39;GET&#39;,
             url,
@@ -383,7 +382,7 @@ class ModelAPI(object):
         )
         return json.loads(response.content)
 
-    def _update(self, pk, obj_data, patch=True):
+    def _update(self, uri, obj_data, patch=True):
         &#34;&#34;&#34;Updates a model object given it&#39;s primary key and new object data;
         Makes a &#39;PATCH&#39; method request to the Bulk API
 
@@ -393,12 +392,10 @@ class ModelAPI(object):
             patch(bool): partial update (default: True)
 
         Returns:
-            success status code (200)
 
         &#34;&#34;&#34;
-        path = self.app.client.model_api_urls[self.app.app_label][
-            self.model_name]
-        url = urljoin(self.app.client.api_url, os.path.join(path, pk))
+
+        url = urljoin(self.app.client.api_url, uri)
         data = json.dumps(obj_data)
         kwargs = {
             &#39;data&#39;: data,
@@ -416,28 +413,99 @@ class ModelAPI(object):
             params={},
             **kwargs
         )
-        return response.status_code
+        if response.status_code != 200:
+            raise BulkAPIError(
+                {&#39;model_api&#39;:
+                 &#34;update not successful. Status code {}; {}&#34;.format(
+                     response.status_code, response.content)})
 
-    def _delete(self, pk):
-        &#34;&#34;&#34;Deletes a model object given it&#39;s primary key; Makes a &#39;DELETE&#39;
+    def _delete(self, uri):
+        &#34;&#34;&#34;Deletes a model object given its primary key; Makes a delete
         method request to the Bulk API
 
         Args:
             pk (str): primary key of object
 
         Returns:
-            success status code (204)
 
         &#34;&#34;&#34;
-        path = self.app.client.model_api_urls[self.app.app_label][
-            self.model_name]
-        url = urljoin(self.app.client.api_url, os.path.join(path, pk))
+        url = urljoin(self.app.client.api_url, uri)
         response = self.app.client.request(
             &#39;DELETE&#39;,
             url,
             params={}
         )
-        return response.status_code</code></pre>
+        if response.status_code != 200:
+            raise BulkAPIError(
+                {&#39;model_api&#39;:
+                 &#34;delete not successful. Status code {}; {}&#34;.format(
+                     response.status_code, response.content)})
+
+
+class ModelObj(object):
+    &#34;&#34;&#34;
+
+    Args:
+        model_api (obj): ModelAPI its related to
+        uri (str): uri of the resource
+        data (dict): property which memoizes _data
+
+    Returns:
+
+
+    &#34;&#34;&#34;
+
+    def __init__(self, model_api, uri, data=None):
+        self.model_api = model_api
+        self.uri = uri
+        self.data = data
+        if not isinstance(model_api, ModelAPI):
+            raise BulkAPIError({&#39;ModelObj&#39;:
+                                &#34;Given model is not a ModelAPI object&#34;})
+
+    def set_data(self, data):
+        self._data = data
+
+    def get_data(self):
+        if self._data:
+            return self._data
+        self.data = self.model_api._get(self.uri)
+        return self._data
+
+    data = property(get_data, set_data)
+
+    def save(self):
+        &#34;&#34;&#34;Makes a call to the put update method of the model_api object
+
+        Args:
+
+        Returns:
+
+        &#34;&#34;&#34;
+        self.model_api._update(self.uri, self.data, patch=False)
+
+    def update(self, data):
+        &#34;&#34;&#34;Makes a call to the patch update method of the model_api object
+
+        Args:
+            data (dict): data to update the object with
+
+        Returns:
+
+        &#34;&#34;&#34;
+        for k, v in self._data.items():
+            self._data[k] = data.get(k, v)
+        self.model_api._update(self.uri, self._data)
+
+    def delete(self):
+        &#34;&#34;&#34;Makes a call to the delete method of the model_api object
+
+        Args:
+
+        Returns:
+
+        &#34;&#34;&#34;
+        self.model_api._delete(self.uri)</code></pre>
 </details>
 </section>
 <section>
@@ -999,7 +1067,7 @@ dictionary.</p>
         )
         return json.loads(response.content)
 
-    def _get(self, pk):
+    def _get(self, uri):
         &#34;&#34;&#34;Gets a model object given it&#39;s primary key; Makes a &#39;GET&#39; method
         request to the Bulk API
 
@@ -1010,9 +1078,8 @@ dictionary.</p>
             dictionary object of the model data
 
         &#34;&#34;&#34;
-        path = self.app.client.model_api_urls[self.app.app_label][
-            self.model_name]
-        url = urljoin(self.app.client.api_url, os.path.join(path, pk))
+
+        url = urljoin(self.app.client.api_url, uri)
         response = self.app.client.request(
             &#39;GET&#39;,
             url,
@@ -1020,7 +1087,7 @@ dictionary.</p>
         )
         return json.loads(response.content)
 
-    def _update(self, pk, obj_data, patch=True):
+    def _update(self, uri, obj_data, patch=True):
         &#34;&#34;&#34;Updates a model object given it&#39;s primary key and new object data;
         Makes a &#39;PATCH&#39; method request to the Bulk API
 
@@ -1030,12 +1097,10 @@ dictionary.</p>
             patch(bool): partial update (default: True)
 
         Returns:
-            success status code (200)
 
         &#34;&#34;&#34;
-        path = self.app.client.model_api_urls[self.app.app_label][
-            self.model_name]
-        url = urljoin(self.app.client.api_url, os.path.join(path, pk))
+
+        url = urljoin(self.app.client.api_url, uri)
         data = json.dumps(obj_data)
         kwargs = {
             &#39;data&#39;: data,
@@ -1053,28 +1118,33 @@ dictionary.</p>
             params={},
             **kwargs
         )
-        return response.status_code
+        if response.status_code != 200:
+            raise BulkAPIError(
+                {&#39;model_api&#39;:
+                 &#34;update not successful. Status code {}; {}&#34;.format(
+                     response.status_code, response.content)})
 
-    def _delete(self, pk):
-        &#34;&#34;&#34;Deletes a model object given it&#39;s primary key; Makes a &#39;DELETE&#39;
+    def _delete(self, uri):
+        &#34;&#34;&#34;Deletes a model object given its primary key; Makes a delete
         method request to the Bulk API
 
         Args:
             pk (str): primary key of object
 
         Returns:
-            success status code (204)
 
         &#34;&#34;&#34;
-        path = self.app.client.model_api_urls[self.app.app_label][
-            self.model_name]
-        url = urljoin(self.app.client.api_url, os.path.join(path, pk))
+        url = urljoin(self.app.client.api_url, uri)
         response = self.app.client.request(
             &#39;DELETE&#39;,
             url,
             params={}
         )
-        return response.status_code</code></pre>
+        if response.status_code != 200:
+            raise BulkAPIError(
+                {&#39;model_api&#39;:
+                 &#34;delete not successful. Status code {}; {}&#34;.format(
+                     response.status_code, response.content)})</code></pre>
 </details>
 <h3>Methods</h3>
 <dl>
@@ -1136,6 +1206,199 @@ any parameters.</p>
 </dd>
 </dl>
 </dd>
+<dt id="bulk_api_client.ModelObj"><code class="flex name class">
+<span>class <span class="ident">ModelObj</span></span>
+<span>(</span><span>model_api, uri, data=None)</span>
+</code></dt>
+<dd>
+<section class="desc"><h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>model_api</code></strong> :&ensp;<code>obj</code></dt>
+<dd>ModelAPI its related to</dd>
+<dt><strong><code>uri</code></strong> :&ensp;<code>str</code></dt>
+<dd>uri of the resource</dd>
+<dt><strong><code>data</code></strong> :&ensp;<code>dict</code></dt>
+<dd>property which memoizes _data</dd>
+</dl>
+<p>Returns:</p></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">class ModelObj(object):
+    &#34;&#34;&#34;
+
+    Args:
+        model_api (obj): ModelAPI its related to
+        uri (str): uri of the resource
+        data (dict): property which memoizes _data
+
+    Returns:
+
+
+    &#34;&#34;&#34;
+
+    def __init__(self, model_api, uri, data=None):
+        self.model_api = model_api
+        self.uri = uri
+        self.data = data
+        if not isinstance(model_api, ModelAPI):
+            raise BulkAPIError({&#39;ModelObj&#39;:
+                                &#34;Given model is not a ModelAPI object&#34;})
+
+    def set_data(self, data):
+        self._data = data
+
+    def get_data(self):
+        if self._data:
+            return self._data
+        self.data = self.model_api._get(self.uri)
+        return self._data
+
+    data = property(get_data, set_data)
+
+    def save(self):
+        &#34;&#34;&#34;Makes a call to the put update method of the model_api object
+
+        Args:
+
+        Returns:
+
+        &#34;&#34;&#34;
+        self.model_api._update(self.uri, self.data, patch=False)
+
+    def update(self, data):
+        &#34;&#34;&#34;Makes a call to the patch update method of the model_api object
+
+        Args:
+            data (dict): data to update the object with
+
+        Returns:
+
+        &#34;&#34;&#34;
+        for k, v in self._data.items():
+            self._data[k] = data.get(k, v)
+        self.model_api._update(self.uri, self._data)
+
+    def delete(self):
+        &#34;&#34;&#34;Makes a call to the delete method of the model_api object
+
+        Args:
+
+        Returns:
+
+        &#34;&#34;&#34;
+        self.model_api._delete(self.uri)</code></pre>
+</details>
+<h3>Instance variables</h3>
+<dl>
+<dt id="bulk_api_client.ModelObj.data"><code class="name">var <span class="ident">data</span></code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def get_data(self):
+    if self._data:
+        return self._data
+    self.data = self.model_api._get(self.uri)
+    return self._data</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="bulk_api_client.ModelObj.delete"><code class="name flex">
+<span>def <span class="ident">delete</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Makes a call to the delete method of the model_api object</p>
+<p>Args:</p>
+<p>Returns:</p></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def delete(self):
+    &#34;&#34;&#34;Makes a call to the delete method of the model_api object
+
+    Args:
+
+    Returns:
+
+    &#34;&#34;&#34;
+    self.model_api._delete(self.uri)</code></pre>
+</details>
+</dd>
+<dt id="bulk_api_client.ModelObj.get_data"><code class="name flex">
+<span>def <span class="ident">get_data</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def get_data(self):
+    if self._data:
+        return self._data
+    self.data = self.model_api._get(self.uri)
+    return self._data</code></pre>
+</details>
+</dd>
+<dt id="bulk_api_client.ModelObj.save"><code class="name flex">
+<span>def <span class="ident">save</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Makes a call to the put update method of the model_api object</p>
+<p>Args:</p>
+<p>Returns:</p></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def save(self):
+    &#34;&#34;&#34;Makes a call to the put update method of the model_api object
+
+    Args:
+
+    Returns:
+
+    &#34;&#34;&#34;
+    self.model_api._update(self.uri, self.data, patch=False)</code></pre>
+</details>
+</dd>
+<dt id="bulk_api_client.ModelObj.set_data"><code class="name flex">
+<span>def <span class="ident">set_data</span></span>(<span>self, data)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def set_data(self, data):
+    self._data = data</code></pre>
+</details>
+</dd>
+<dt id="bulk_api_client.ModelObj.update"><code class="name flex">
+<span>def <span class="ident">update</span></span>(<span>self, data)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Makes a call to the patch update method of the model_api object</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>data</code></strong> :&ensp;<code>dict</code></dt>
+<dd>data to update the object with</dd>
+</dl>
+<p>Returns:</p></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def update(self, data):
+    &#34;&#34;&#34;Makes a call to the patch update method of the model_api object
+
+    Args:
+        data (dict): data to update the object with
+
+    Returns:
+
+    &#34;&#34;&#34;
+    for k, v in self._data.items():
+        self._data[k] = data.get(k, v)
+    self.model_api._update(self.uri, self._data)</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
 </dl>
 </section>
 </article>
@@ -1175,6 +1438,17 @@ any parameters.</p>
 <h4><code><a title="bulk_api_client.ModelAPI" href="#bulk_api_client.ModelAPI">ModelAPI</a></code></h4>
 <ul class="">
 <li><code><a title="bulk_api_client.ModelAPI.query" href="#bulk_api_client.ModelAPI.query">query</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="bulk_api_client.ModelObj" href="#bulk_api_client.ModelObj">ModelObj</a></code></h4>
+<ul class="two-column">
+<li><code><a title="bulk_api_client.ModelObj.data" href="#bulk_api_client.ModelObj.data">data</a></code></li>
+<li><code><a title="bulk_api_client.ModelObj.delete" href="#bulk_api_client.ModelObj.delete">delete</a></code></li>
+<li><code><a title="bulk_api_client.ModelObj.get_data" href="#bulk_api_client.ModelObj.get_data">get_data</a></code></li>
+<li><code><a title="bulk_api_client.ModelObj.save" href="#bulk_api_client.ModelObj.save">save</a></code></li>
+<li><code><a title="bulk_api_client.ModelObj.set_data" href="#bulk_api_client.ModelObj.set_data">set_data</a></code></li>
+<li><code><a title="bulk_api_client.ModelObj.update" href="#bulk_api_client.ModelObj.update">update</a></code></li>
 </ul>
 </li>
 </ul>
