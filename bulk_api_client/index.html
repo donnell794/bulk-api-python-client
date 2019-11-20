@@ -87,14 +87,6 @@ class Client(object):
         &#34;&#34;&#34;
         self.token = token
         self.api_url = api_url
-        yaml_res = self.request(
-            method=&#39;GET&#39;,
-            url=urljoin(self.api_url, &#39;swagger.yaml&#39;),
-            params={},
-        )
-        yaml_data = yaml.safe_load(yaml_res.raw)
-        self.definitions = yaml_data[&#39;definitions&#39;]
-        self.paths = yaml_data[&#39;paths&#39;]
         requests_cache.install_cache(
             &#39;bulk-api-cache&#39;,
             backend=requests_cache.backends.sqlite.DbCache(
@@ -102,6 +94,14 @@ class Client(object):
             ),
             expire_after=expiration_time
         )
+        yaml_res = self.request(
+            method=&#39;GET&#39;,
+            url=urljoin(self.api_url, &#39;swagger.yaml&#39;),
+            params={},
+        )
+        self.yaml_data = yaml.safe_load(yaml_res.raw)
+        self.definitions = self.yaml_data[&#39;definitions&#39;]
+        self.paths = self.yaml_data[&#39;paths&#39;]
 
     def request(self, method, url, params, *args, **kwargs):
         &#34;&#34;&#34;Request function to construct and send a request. Uses the Requests
@@ -311,12 +311,12 @@ class ModelAPI(object):
 
         return df, pages_left
 
-    def _list(self, page=None):
+    def _list(self, page):
         &#34;&#34;&#34;Lists all model object of a given model; Makes a &#39;GET&#39; method request
         to the Bulk API
 
         Args:
-
+            page (int): page number of list of model instances
         Returns:
             list of dictionary objects of the model data
 
@@ -324,19 +324,38 @@ class ModelAPI(object):
         path = self.app.client.model_api_urls[self.app.app_label][
             self.model_name]
         url = urljoin(self.app.client.api_url, path)
-        response = self.app.client.request(
-            &#39;GET&#39;,
-            url,
-            params={&#39;page&#39;: page}
-        )
-        return json.loads(response.content)
+        with requests_cache.disabled():
+            response = self.app.client.request(
+                &#39;GET&#39;,
+                url,
+                params={&#39;page&#39;: page}
+            )
+        return json.loads(response.content)[&#39;results&#39;]
+
+    def list(self, page):
+        &#34;&#34;&#34;Makes call to private list method and creates list of ModelObj
+        instances from returned model data
+
+        Args:
+            page (int): page number of list of model instances
+        Returns:
+            list of ModelObjs
+
+        &#34;&#34;&#34;
+        data = self._list(page=page)
+        path = self.app.client.model_api_urls[self.app.app_label][
+            self.model_name]
+        objs = []
+        for obj_data in data:
+            uri = os.path.join(path, str(obj_data[&#39;id&#39;]))
+            objs.append(ModelObj(self, uri, data=obj_data))
+        return objs
 
     def _create(self, obj_data):
         &#34;&#34;&#34;Creates a model object given it&#39;s primary key and new object data;
         Makes a &#39;POST&#39; method request to the Bulk API
 
         Args:
-            pk (str): primary key of object
             obj_data (dict): new data to create the object with
 
         Returns:
@@ -362,12 +381,28 @@ class ModelAPI(object):
         )
         return json.loads(response.content)
 
+    def create(self, obj_data):
+        &#34;&#34;&#34;Makes call to private create method and creates ModelObj instance
+        from returned model data
+
+        Args:
+            obj_data (dict): new data to create the object with
+        Returns:
+            ModelObj
+
+        &#34;&#34;&#34;
+        data = self._create(obj_data)
+        path = self.app.client.model_api_urls[self.app.app_label][
+            self.model_name]
+        uri = os.path.join(path, str(data[&#39;id&#39;]))
+        return ModelObj(self, uri=uri, data=data)
+
     def _get(self, uri):
         &#34;&#34;&#34;Gets a model object given it&#39;s primary key; Makes a &#39;GET&#39; method
         request to the Bulk API
 
         Args:
-            pk (str): primary key of object
+            uri (str): identifier of object
 
         Returns:
             dictionary object of the model data
@@ -375,19 +410,36 @@ class ModelAPI(object):
         &#34;&#34;&#34;
 
         url = urljoin(self.app.client.api_url, uri)
-        response = self.app.client.request(
-            &#39;GET&#39;,
-            url,
-            params={}
-        )
+        with requests_cache.disabled():
+            response = self.app.client.request(
+                &#39;GET&#39;,
+                url,
+                params={}
+            )
         return json.loads(response.content)
+
+    def get(self, pk):
+        &#34;&#34;&#34;Makes call to private get method and creates a ModelObj instance
+        from returned model data
+
+        Args:
+            pk (int): primary key of object
+        Returns:
+            ModelObj
+
+        &#34;&#34;&#34;
+        path = self.app.client.model_api_urls[self.app.app_label][
+            self.model_name]
+        uri = os.path.join(path, str(pk))
+        data = self._get(uri)
+        return ModelObj(self, uri, data=data)
 
     def _update(self, uri, obj_data, patch=True):
         &#34;&#34;&#34;Updates a model object given it&#39;s primary key and new object data;
         Makes a &#39;PATCH&#39; method request to the Bulk API
 
         Args:
-            pk (str): primary key of object
+            uri (str): identifier of object
             obj_data (dict): new data to update the object with
             patch(bool): partial update (default: True)
 
@@ -413,18 +465,19 @@ class ModelAPI(object):
             params={},
             **kwargs
         )
-        if response.status_code != 200:
-            raise BulkAPIError(
-                {&#39;model_api&#39;:
-                 &#34;update not successful. Status code {}; {}&#34;.format(
-                     response.status_code, response.content)})
+        if response.status_code == 200:
+            return json.loads(response.content)
+        raise BulkAPIError(
+            {&#39;model_api&#39;:
+             &#34;update not successful. Status code {}; {}&#34;.format(
+                 response.status_code, response.content)})
 
     def _delete(self, uri):
         &#34;&#34;&#34;Deletes a model object given its primary key; Makes a delete
         method request to the Bulk API
 
         Args:
-            pk (str): primary key of object
+            uri (str): identifier of object
 
         Returns:
 
@@ -435,7 +488,7 @@ class ModelAPI(object):
             url,
             params={}
         )
-        if response.status_code != 200:
+        if response.status_code != 204:
             raise BulkAPIError(
                 {&#39;model_api&#39;:
                  &#34;delete not successful. Status code {}; {}&#34;.format(
@@ -482,6 +535,7 @@ class ModelObj(object):
         Returns:
 
         &#34;&#34;&#34;
+
         self.model_api._update(self.uri, self.data, patch=False)
 
     def update(self, data):
@@ -493,9 +547,7 @@ class ModelObj(object):
         Returns:
 
         &#34;&#34;&#34;
-        for k, v in self._data.items():
-            self._data[k] = data.get(k, v)
-        self.model_api._update(self.uri, self._data)
+        self.data = self.model_api._update(self.uri, data)
 
     def delete(self):
         &#34;&#34;&#34;Makes a call to the delete method of the model_api object
@@ -694,14 +746,6 @@ Requies a user token with access to data-warehouse</p>
         &#34;&#34;&#34;
         self.token = token
         self.api_url = api_url
-        yaml_res = self.request(
-            method=&#39;GET&#39;,
-            url=urljoin(self.api_url, &#39;swagger.yaml&#39;),
-            params={},
-        )
-        yaml_data = yaml.safe_load(yaml_res.raw)
-        self.definitions = yaml_data[&#39;definitions&#39;]
-        self.paths = yaml_data[&#39;paths&#39;]
         requests_cache.install_cache(
             &#39;bulk-api-cache&#39;,
             backend=requests_cache.backends.sqlite.DbCache(
@@ -709,6 +753,14 @@ Requies a user token with access to data-warehouse</p>
             ),
             expire_after=expiration_time
         )
+        yaml_res = self.request(
+            method=&#39;GET&#39;,
+            url=urljoin(self.api_url, &#39;swagger.yaml&#39;),
+            params={},
+        )
+        self.yaml_data = yaml.safe_load(yaml_res.raw)
+        self.definitions = self.yaml_data[&#39;definitions&#39;]
+        self.paths = self.yaml_data[&#39;paths&#39;]
 
     def request(self, method, url, params, *args, **kwargs):
         &#34;&#34;&#34;Request function to construct and send a request. Uses the Requests
@@ -1016,12 +1068,12 @@ dictionary.</p>
 
         return df, pages_left
 
-    def _list(self, page=None):
+    def _list(self, page):
         &#34;&#34;&#34;Lists all model object of a given model; Makes a &#39;GET&#39; method request
         to the Bulk API
 
         Args:
-
+            page (int): page number of list of model instances
         Returns:
             list of dictionary objects of the model data
 
@@ -1029,19 +1081,38 @@ dictionary.</p>
         path = self.app.client.model_api_urls[self.app.app_label][
             self.model_name]
         url = urljoin(self.app.client.api_url, path)
-        response = self.app.client.request(
-            &#39;GET&#39;,
-            url,
-            params={&#39;page&#39;: page}
-        )
-        return json.loads(response.content)
+        with requests_cache.disabled():
+            response = self.app.client.request(
+                &#39;GET&#39;,
+                url,
+                params={&#39;page&#39;: page}
+            )
+        return json.loads(response.content)[&#39;results&#39;]
+
+    def list(self, page):
+        &#34;&#34;&#34;Makes call to private list method and creates list of ModelObj
+        instances from returned model data
+
+        Args:
+            page (int): page number of list of model instances
+        Returns:
+            list of ModelObjs
+
+        &#34;&#34;&#34;
+        data = self._list(page=page)
+        path = self.app.client.model_api_urls[self.app.app_label][
+            self.model_name]
+        objs = []
+        for obj_data in data:
+            uri = os.path.join(path, str(obj_data[&#39;id&#39;]))
+            objs.append(ModelObj(self, uri, data=obj_data))
+        return objs
 
     def _create(self, obj_data):
         &#34;&#34;&#34;Creates a model object given it&#39;s primary key and new object data;
         Makes a &#39;POST&#39; method request to the Bulk API
 
         Args:
-            pk (str): primary key of object
             obj_data (dict): new data to create the object with
 
         Returns:
@@ -1067,12 +1138,28 @@ dictionary.</p>
         )
         return json.loads(response.content)
 
+    def create(self, obj_data):
+        &#34;&#34;&#34;Makes call to private create method and creates ModelObj instance
+        from returned model data
+
+        Args:
+            obj_data (dict): new data to create the object with
+        Returns:
+            ModelObj
+
+        &#34;&#34;&#34;
+        data = self._create(obj_data)
+        path = self.app.client.model_api_urls[self.app.app_label][
+            self.model_name]
+        uri = os.path.join(path, str(data[&#39;id&#39;]))
+        return ModelObj(self, uri=uri, data=data)
+
     def _get(self, uri):
         &#34;&#34;&#34;Gets a model object given it&#39;s primary key; Makes a &#39;GET&#39; method
         request to the Bulk API
 
         Args:
-            pk (str): primary key of object
+            uri (str): identifier of object
 
         Returns:
             dictionary object of the model data
@@ -1080,19 +1167,36 @@ dictionary.</p>
         &#34;&#34;&#34;
 
         url = urljoin(self.app.client.api_url, uri)
-        response = self.app.client.request(
-            &#39;GET&#39;,
-            url,
-            params={}
-        )
+        with requests_cache.disabled():
+            response = self.app.client.request(
+                &#39;GET&#39;,
+                url,
+                params={}
+            )
         return json.loads(response.content)
+
+    def get(self, pk):
+        &#34;&#34;&#34;Makes call to private get method and creates a ModelObj instance
+        from returned model data
+
+        Args:
+            pk (int): primary key of object
+        Returns:
+            ModelObj
+
+        &#34;&#34;&#34;
+        path = self.app.client.model_api_urls[self.app.app_label][
+            self.model_name]
+        uri = os.path.join(path, str(pk))
+        data = self._get(uri)
+        return ModelObj(self, uri, data=data)
 
     def _update(self, uri, obj_data, patch=True):
         &#34;&#34;&#34;Updates a model object given it&#39;s primary key and new object data;
         Makes a &#39;PATCH&#39; method request to the Bulk API
 
         Args:
-            pk (str): primary key of object
+            uri (str): identifier of object
             obj_data (dict): new data to update the object with
             patch(bool): partial update (default: True)
 
@@ -1118,18 +1222,19 @@ dictionary.</p>
             params={},
             **kwargs
         )
-        if response.status_code != 200:
-            raise BulkAPIError(
-                {&#39;model_api&#39;:
-                 &#34;update not successful. Status code {}; {}&#34;.format(
-                     response.status_code, response.content)})
+        if response.status_code == 200:
+            return json.loads(response.content)
+        raise BulkAPIError(
+            {&#39;model_api&#39;:
+             &#34;update not successful. Status code {}; {}&#34;.format(
+                 response.status_code, response.content)})
 
     def _delete(self, uri):
         &#34;&#34;&#34;Deletes a model object given its primary key; Makes a delete
         method request to the Bulk API
 
         Args:
-            pk (str): primary key of object
+            uri (str): identifier of object
 
         Returns:
 
@@ -1140,7 +1245,7 @@ dictionary.</p>
             url,
             params={}
         )
-        if response.status_code != 200:
+        if response.status_code != 204:
             raise BulkAPIError(
                 {&#39;model_api&#39;:
                  &#34;delete not successful. Status code {}; {}&#34;.format(
@@ -1148,6 +1253,114 @@ dictionary.</p>
 </details>
 <h3>Methods</h3>
 <dl>
+<dt id="bulk_api_client.ModelAPI.create"><code class="name flex">
+<span>def <span class="ident">create</span></span>(<span>self, obj_data)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Makes call to private create method and creates ModelObj instance
+from returned model data</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>obj_data</code></strong> :&ensp;<code>dict</code></dt>
+<dd>new data to create the object with</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><a title="bulk_api_client.ModelObj" href="#bulk_api_client.ModelObj"><code>ModelObj</code></a></dt>
+<dd>&nbsp;</dd>
+</dl></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def create(self, obj_data):
+    &#34;&#34;&#34;Makes call to private create method and creates ModelObj instance
+    from returned model data
+
+    Args:
+        obj_data (dict): new data to create the object with
+    Returns:
+        ModelObj
+
+    &#34;&#34;&#34;
+    data = self._create(obj_data)
+    path = self.app.client.model_api_urls[self.app.app_label][
+        self.model_name]
+    uri = os.path.join(path, str(data[&#39;id&#39;]))
+    return ModelObj(self, uri=uri, data=data)</code></pre>
+</details>
+</dd>
+<dt id="bulk_api_client.ModelAPI.get"><code class="name flex">
+<span>def <span class="ident">get</span></span>(<span>self, pk)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Makes call to private get method and creates a ModelObj instance
+from returned model data</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>pk</code></strong> :&ensp;<code>int</code></dt>
+<dd>primary key of object</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><a title="bulk_api_client.ModelObj" href="#bulk_api_client.ModelObj"><code>ModelObj</code></a></dt>
+<dd>&nbsp;</dd>
+</dl></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def get(self, pk):
+    &#34;&#34;&#34;Makes call to private get method and creates a ModelObj instance
+    from returned model data
+
+    Args:
+        pk (int): primary key of object
+    Returns:
+        ModelObj
+
+    &#34;&#34;&#34;
+    path = self.app.client.model_api_urls[self.app.app_label][
+        self.model_name]
+    uri = os.path.join(path, str(pk))
+    data = self._get(uri)
+    return ModelObj(self, uri, data=data)</code></pre>
+</details>
+</dd>
+<dt id="bulk_api_client.ModelAPI.list"><code class="name flex">
+<span>def <span class="ident">list</span></span>(<span>self, page)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Makes call to private list method and creates list of ModelObj
+instances from returned model data</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>page</code></strong> :&ensp;<code>int</code></dt>
+<dd>page number of list of model instances</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>list</code> of <code>ModelObjs</code></dt>
+<dd>&nbsp;</dd>
+</dl></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def list(self, page):
+    &#34;&#34;&#34;Makes call to private list method and creates list of ModelObj
+    instances from returned model data
+
+    Args:
+        page (int): page number of list of model instances
+    Returns:
+        list of ModelObjs
+
+    &#34;&#34;&#34;
+    data = self._list(page=page)
+    path = self.app.client.model_api_urls[self.app.app_label][
+        self.model_name]
+    objs = []
+    for obj_data in data:
+        uri = os.path.join(path, str(obj_data[&#39;id&#39;]))
+        objs.append(ModelObj(self, uri, data=obj_data))
+    return objs</code></pre>
+</details>
+</dd>
 <dt id="bulk_api_client.ModelAPI.query"><code class="name flex">
 <span>def <span class="ident">query</span></span>(<span>self, fields=None, filter=None, order=None, page_size=None)</span>
 </code></dt>
@@ -1263,6 +1476,7 @@ any parameters.</p>
         Returns:
 
         &#34;&#34;&#34;
+
         self.model_api._update(self.uri, self.data, patch=False)
 
     def update(self, data):
@@ -1274,9 +1488,7 @@ any parameters.</p>
         Returns:
 
         &#34;&#34;&#34;
-        for k, v in self._data.items():
-            self._data[k] = data.get(k, v)
-        self.model_api._update(self.uri, self._data)
+        self.data = self.model_api._update(self.uri, data)
 
     def delete(self):
         &#34;&#34;&#34;Makes a call to the delete method of the model_api object
@@ -1356,6 +1568,7 @@ any parameters.</p>
     Returns:
 
     &#34;&#34;&#34;
+
     self.model_api._update(self.uri, self.data, patch=False)</code></pre>
 </details>
 </dd>
@@ -1392,9 +1605,7 @@ any parameters.</p>
     Returns:
 
     &#34;&#34;&#34;
-    for k, v in self._data.items():
-        self._data[k] = data.get(k, v)
-    self.model_api._update(self.uri, self._data)</code></pre>
+    self.data = self.model_api._update(self.uri, data)</code></pre>
 </details>
 </dd>
 </dl>
@@ -1437,6 +1648,9 @@ any parameters.</p>
 <li>
 <h4><code><a title="bulk_api_client.ModelAPI" href="#bulk_api_client.ModelAPI">ModelAPI</a></code></h4>
 <ul class="">
+<li><code><a title="bulk_api_client.ModelAPI.create" href="#bulk_api_client.ModelAPI.create">create</a></code></li>
+<li><code><a title="bulk_api_client.ModelAPI.get" href="#bulk_api_client.ModelAPI.get">get</a></code></li>
+<li><code><a title="bulk_api_client.ModelAPI.list" href="#bulk_api_client.ModelAPI.list">list</a></code></li>
 <li><code><a title="bulk_api_client.ModelAPI.query" href="#bulk_api_client.ModelAPI.query">query</a></code></li>
 </ul>
 </li>
