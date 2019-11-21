@@ -681,6 +681,10 @@ def test_model_obj(model_api, uri, data):
         assert model_obj.data == data or fn_get.return_value
         assert model_obj.text == data.get('text', None)
 
+    new_text = random_string()
+    model_obj.text = new_text
+    assert model_obj.data['text'] == new_text
+
 
 def test_model_obj_get_data(model_api):
     """Tests the get_data method of the ModelObj class sets the _data property
