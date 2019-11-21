@@ -497,44 +497,6 @@ class ModelObj(object):
             [self.model_api.app.app_label, self.model_api.model_name])
         model_properties = self.model_api.app.client.definitions[model][
             'properties']
-        for field, model_property in model_properties.items():
-            #     def set_f(self, val):
-            #         self.data[field] = val
-            #
-            #     setattr(self, "set_%s" % field, MethodType(set_f, self))
-            #
-            #     def get_f(self):
-            #         return self.data[field]
-            #
-            #     setattr(self, "get_%s" % field, MethodType(get_f, self))
-
-            # setattr(
-            #     self,
-            #     field,
-            #     MethodType(
-            #         property(
-            #             "set_%s" % field,
-            #             "get_%s" % field
-            #         ),
-            #         self
-            #     )
-            # )
-            # setattr(self, field, property("set_%s" % field, "get_%s" % field))
-            # setattr(self, field, property(get_f))
-            # setattr(self, field, self.data.get(field, None))
-            self.data[field] = self._data.get(field, None)
-        # property(
-        #     getattr(self, 'set_%s' % field),
-        #     getattr(self, 'get_%s' % field)
-        # )
-        # setattr(
-        #     self,
-        #     field,
-        #     property(
-        #         getattr(self, 'set_%s' % field),
-        #         getattr(self, 'get_%s' % field)
-        #     )
-        # )
 
     def __getattr__(self, field):
         return self._data.get(field)
