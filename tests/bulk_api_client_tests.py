@@ -679,6 +679,7 @@ def test_model_obj(model_api, uri, data):
         assert model_obj.model_api == model_api
         assert model_obj.uri == uri
         assert model_obj._data == data
+        assert model_obj.text
 
 
 def test_model_obj_get_data(model_api):

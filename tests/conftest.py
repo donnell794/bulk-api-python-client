@@ -24,8 +24,16 @@ def client():
     url = "http://test"
     Client.app_api_urls = None
     Client.model_api_urls = {}
-    yaml_data = {'definitions': ['some_definitions'],
-                 'paths': ['some_paths']}
+    yaml_data = {
+        'definitions': {
+            'bulk_importer.examplefortesting': {
+                'properties': {
+                    'text': {
+                        'title': 'Text',
+                        'type': 'string',
+                        'minLength': 1
+                    }, }}},
+        'paths': ['some_paths']}
     data = BytesIO(yaml.dump(yaml_data).encode())
     response = Response()
     response._content = b''
