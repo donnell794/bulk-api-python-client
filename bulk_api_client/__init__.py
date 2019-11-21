@@ -7,6 +7,8 @@ import re
 import shutil
 import sys
 import yaml
+
+from types import MethodType
 from io import BytesIO
 from urllib.parse import urljoin
 from tempfile import gettempdir
@@ -486,11 +488,27 @@ class ModelObj(object):
 
     def __init__(self, model_api, uri, data=None):
         self.model_api = model_api
-        self.uri = uri
-        self.data = data
         if not isinstance(model_api, ModelAPI):
             raise BulkAPIError({'ModelObj':
                                 "Given model is not a ModelAPI object"})
+        self.uri = uri
+        self.data = data
+        model = '.'.join(
+            [self.model_api.app.app_label, self.model_api.model_name])
+        model_properties = self.model_api.app.client.definitions[model][
+            'properties']
+        for field, property in model_properties.items():
+            def set_f(self, val):
+                self.data[field] = val
+
+            setattr(self, "set_%s" % field, MethodType(set_f, self))
+
+            def get_f(self):
+                return self.data[field]
+
+            setattr(self, "get_%s" % field, MethodType(get_f, self))
+
+            setattr(self, field, self.data.get(field))
 
     def set_data(self, data):
         self._data = data

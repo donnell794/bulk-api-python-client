@@ -667,19 +667,19 @@ def test_model_api_delete(model_api):
 
 
 @pytest.mark.parametrize("uri,data", [
-    ('/api/bulk_importer/examplefortesting/1', None),
+    ('/api/bulk_importer/examplefortesting/1', {}),
     ('/api/bulk_importer/examplefortesting/1',
      {'text': random_string()}),
 ])
 def test_model_obj(model_api, uri, data):
     """Test ModelObj properties are as set when creating an instance"""
-    with mock.patch.object(ModelObj, 'get_data',
+    with mock.patch.object(ModelAPI, '_get',
                            return_value={'id': 1}) as fn_get:
         model_obj = ModelObj(model_api, uri, data)
         assert model_obj.model_api == model_api
         assert model_obj.uri == uri
-        assert model_obj._data == data
-        assert model_obj.text
+        assert model_obj.data == data or fn_get.return_value
+        assert model_obj.text == data.get('text', None)
 
 
 def test_model_obj_get_data(model_api):

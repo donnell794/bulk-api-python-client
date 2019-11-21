@@ -65,6 +65,9 @@ def model_api(app_api):
     data = {
         model_name: urljoin(app_api.client.api_url, model_name),
     }
+    model = '.'.join([app_api.app_label, model_name])
+    app_api.client.definitions[model] = app_api.client.definitions.pop(
+        'bulk_importer.examplefortesting')
     response = Response()
     response._content = json.dumps(data)
     response.status_code = 200
