@@ -689,13 +689,12 @@ def test_model_obj_get_data(model_api):
     model_data = {'id': 1}
     uri = '/api/bulk_importer/examplefortesting/1'
     with mock.patch.object(ModelObj, 'set_data') as fn_set:
-        model_obj = ModelObj(model_api, uri)
-        not fn_set.called
-
-    with mock.patch.object(ModelAPI, '_get',
-                           return_value=model_data) as fn_get:
-        model_obj.get_data()
-        fn_get.assert_called_with(model_obj.uri)
+        with mock.patch.object(ModelAPI, '_get',
+                               return_value=model_data) as fn_get:
+            model_obj = ModelObj(model_api, uri)
+            not fn_set.called
+            model_obj.get_data()
+            fn_get.assert_called_with(model_obj.uri)
     assert model_obj.model_api == model_api
     assert model_obj.uri == uri
     assert model_obj.data == model_data
