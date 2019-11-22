@@ -8,7 +8,7 @@ from unittest import mock
 from urllib.parse import urljoin
 from requests.models import Response
 
-from bulk_api_client import Client, AppAPI, ModelAPI, ModelObj
+from bulk_api_client import Client, AppAPI, ModelAPI, ModelObj, get_model_obj
 from bulk_api_client import requests
 
 
@@ -32,8 +32,12 @@ def client():
                         'title': 'Text',
                         'type': 'string',
                         'minLength': 1
-                    }, }}},
+                    },
+                }
+            }
+        },
         'paths': ['some_paths']}
+
     data = BytesIO(yaml.dump(yaml_data).encode())
     response = Response()
     response._content = b''
@@ -66,8 +70,38 @@ def model_api(app_api):
         model_name: urljoin(app_api.client.api_url, model_name),
     }
     model = '.'.join([app_api.app_label, model_name])
-    app_api.client.definitions[model] = app_api.client.definitions.pop(
-        'bulk_importer.examplefortesting')
+    app_api.client.definitions.pop('bulk_importer.examplefortesting')
+    properties = {
+        'id': {
+            'title': 'ID',
+            'type': 'integer',
+            'readOnly': True
+        },
+        'name': {
+            'title': 'Name',
+            'type': 'string',
+            'maxLength': 256,
+            'minLength': 1
+        },
+        'text': {
+            'title': 'Text',
+            'type': 'string',
+            'minLength': 1
+        },
+        'integer': {
+            'title': 'Integer',
+            'type': 'integer',
+            'maximum': 2147483647,
+            'minimum': -2147483648,
+            'x-nullable': True
+        },
+    }
+    app_api.client.definitions[model] = {
+        'properties': dict(random.sample(
+            properties.items(),
+            k=random.randint(0, len(properties))
+        ))
+    }
     response = Response()
     response._content = json.dumps(data)
     response.status_code = 200
@@ -75,3 +109,21 @@ def model_api(app_api):
         fn.return_value = response
         model_api = ModelAPI(app_api, model_name)
     return model_api
+
+
+@pytest.fixture
+def model_obj(model_api):
+    uri = random_string()
+    options = {
+        'id': random.randint(0, 1000),
+        'text': random_string(),
+        'integer': random.randint(-2147483648, 2147483647),
+    }
+    data = dict(random.sample(
+        options.items(),
+        k=random.randint(0, len(options))
+    ))
+    with mock.patch.object(ModelAPI, '_get',
+                           return_value={'id': 1}) as fn_get:
+        model_obj = get_model_obj(model_api, uri, data)
+    return model_obj
