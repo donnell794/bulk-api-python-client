@@ -10,7 +10,7 @@ from pandas import DataFrame, read_csv
 from urllib.parse import urljoin
 from requests.models import Response
 
-from bulk_api_client import Client, AppAPI, ModelAPI, ModelObj
+from bulk_api_client import Client, AppAPI, ModelAPI, ModelObj, get_model_obj
 from bulk_api_client import (requests, CERT_PATH, BulkAPIError, is_kv,
                              requests_cache)
 
@@ -675,7 +675,7 @@ def test_model_obj(model_api, uri, data):
     """Test ModelObj properties are as set when creating an instance"""
     with mock.patch.object(ModelAPI, '_get',
                            return_value={'id': 1}) as fn_get:
-        model_obj = ModelObj(model_api, uri, data)
+        model_obj = get_model_obj(model_api, uri, data)
         assert model_obj.model_api == model_api
         assert model_obj.uri == uri
         assert model_obj.data == data or fn_get.return_value

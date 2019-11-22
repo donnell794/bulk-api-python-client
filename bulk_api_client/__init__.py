@@ -326,7 +326,7 @@ class ModelAPI(object):
         objs = []
         for obj_data in data:
             uri = os.path.join(path, str(obj_data['id']))
-            objs.append(ModelObj(self, uri, data=obj_data))
+            objs.append(get_model_obj(self, uri, data=obj_data))
         return objs
 
     def _create(self, obj_data):
@@ -373,7 +373,7 @@ class ModelAPI(object):
         path = self.app.client.model_api_urls[self.app.app_label][
             self.model_name]
         uri = os.path.join(path, str(data['id']))
-        return ModelObj(self, uri=uri, data=data)
+        return get_model_obj(self, uri=uri, data=data)
 
     def _get(self, uri):
         """Gets a model object given it's primary key; Makes a 'GET' method
@@ -410,7 +410,7 @@ class ModelAPI(object):
             self.model_name]
         uri = os.path.join(path, str(pk))
         data = self._get(uri)
-        return ModelObj(self, uri, data=data)
+        return get_model_obj(self, uri, data=data)
 
     def _update(self, uri, obj_data, patch=True):
         """Updates a model object given it's primary key and new object data;
@@ -473,7 +473,38 @@ class ModelAPI(object):
                      response.status_code, response.content)})
 
 
-class ModelObj(object):
+def get_model_obj(model_api, uri, data=None):
+    model = '.'.join(
+        [model_api.app.app_label, model_api.model_name])
+    model_properties = model_api.app.client.definitions[model][
+        'properties']
+    for field, model_property in model_properties.items():
+        def get_f(cls):
+            return cls.data.get(field)
+
+        setattr(ModelObj, "get_%s" % field, get_f)
+
+        def set_f(cls, val):
+            if cls.model_api.app.client.definitions[model]['properties'][
+                    field].get('readOnly', False):
+                raise BulkAPIError({'ModelObj':
+                                    "Cannot set a read only property"})
+            cls.data[field] = val
+
+        setattr(ModelObj, "set_%s" % field, set_f)
+
+        setattr(
+            ModelObj,
+            field,
+            property(
+                getattr(ModelObj, 'get_%s' % field),
+                getattr(ModelObj, 'set_%s' % field)
+            )
+        )
+    return ModelObj(model_api, uri, data)
+
+
+class ModelObj:
     """
 
     Args:
@@ -493,20 +524,6 @@ class ModelObj(object):
                                 "Given model is not a ModelAPI object"})
         self.uri = uri
         self.data = data
-        model = '.'.join(
-            [self.model_api.app.app_label, self.model_api.model_name])
-        model_properties = self.model_api.app.client.definitions[model][
-            'properties']
-
-    def __getattr__(self, field):
-        return self._data.get(field)
-
-    def __setattr__(self, field, value):
-        if self.model_api.app.client.definitions[model]['properties'][field][
-                'readOnly']:
-            raise BulkAPIError({'ModelObj':
-                                "Cannot set a read only property"})
-        self._data[field] = value
 
     def set_data(self, data):
         self._data = data
