@@ -12,6 +12,7 @@ from types import MethodType
 from io import BytesIO
 from urllib.parse import urljoin
 from tempfile import gettempdir
+from copy import deepcopy
 
 
 CERT_PATH = os.path.join(
@@ -474,6 +475,7 @@ class ModelAPI(object):
 
 
 def get_model_obj(model_api, uri, data=None):
+    ModelObj = deepcopy(_ModelObj(model_api, uri, data))
     model = '.'.join(
         [model_api.app.app_label, model_api.model_name])
     model_properties = model_api.app.client.definitions[model][
@@ -501,11 +503,14 @@ def get_model_obj(model_api, uri, data=None):
                 getattr(ModelObj, 'set_%s' % field)
             )
         )
-    return ModelObj(model_api, uri, data)
+    return ModelObj
 
 
-class ModelObj:
+class _ModelObj:
     """
+    Returns an object with proerties of the given model to be modified directly
+    and reflected in the database. Must call the get_model_obj funnction to get
+    properties
 
     Args:
         model_api (obj): ModelAPI its related to

@@ -10,7 +10,7 @@ from pandas import DataFrame, read_csv
 from urllib.parse import urljoin
 from requests.models import Response
 
-from bulk_api_client import Client, AppAPI, ModelAPI, ModelObj, get_model_obj
+from bulk_api_client import Client, AppAPI, ModelAPI, _ModelObj, get_model_obj
 from bulk_api_client import (requests, CERT_PATH, BulkAPIError, is_kv,
                              requests_cache)
 
@@ -673,6 +673,12 @@ def test_model_api_delete(model_api):
 ])
 def test_model_obj(model_api, uri, data):
     """Test ModelObj properties are as set when creating an instance"""
+    model = '.'.join([model_api.app.app_label, model_api.model_name])
+    model_api.app.client.definitions[model]['properties']['text'] = {
+        'title': 'Text',
+        'type': 'string',
+        'minLength': 1
+    }
     with mock.patch.object(ModelAPI, '_get',
                            return_value={'id': 1}) as fn_get:
         model_obj = get_model_obj(model_api, uri, data)
@@ -789,3 +795,85 @@ def test_model_obj_invalid_delete(model_api):
     with mock.patch.object(Client, 'request', return_value=response):
         with pytest.raises(BulkAPIError):
             model_obj.delete()
+
+
+def test_model_obj_property_duplication_regression(app_api):
+    model_name_1 = random_string().lower()
+    model_name_2 = random_string().lower()
+    data = {
+        model_name_1: urljoin(app_api.client.api_url, model_name_1),
+        model_name_2: urljoin(app_api.client.api_url, model_name_2),
+    }
+    model_1 = '.'.join([app_api.app_label, model_name_1])
+    model_2 = '.'.join([app_api.app_label, model_name_2])
+    app_api.client.definitions.pop('bulk_importer.examplefortesting')
+    properties = {
+        'id': {
+            'title': 'ID',
+            'type': 'integer',
+            'readOnly': True
+        },
+        'name': {
+            'title': 'Name',
+            'type': 'string',
+            'maxLength': 256,
+            'minLength': 1
+        },
+        'text': {
+            'title': 'Text',
+            'type': 'string',
+            'minLength': 1
+        },
+        'integer': {
+            'title': 'Integer',
+            'type': 'integer',
+            'maximum': 2147483647,
+            'minimum': -2147483648,
+            'x-nullable': True
+        },
+    }
+    app_api.client.definitions[model_1] = {
+        'properties': dict(random.sample(
+            properties.items(),
+            k=random.randint(1, len(properties))
+        ))
+    }
+    app_api.client.definitions[model_2] = {
+        'properties': dict(random.sample(
+            properties.items(),
+            k=random.randint(1, len(properties))
+        ))
+    }
+    response = Response()
+    response._content = json.dumps(data)
+    response.status_code = 200
+
+    with mock.patch.object(Client, 'request', return_value=response) as fn:
+        model_api_1 = ModelAPI(app_api, model_name_1)
+        model_api_2 = ModelAPI(app_api, model_name_2)
+    assert model_api_1 != model_api_2
+    options = {
+        'text': random_string(),
+        'name': random_string(),
+        'integer': random.randint(-2147483648, 2147483647),
+    }
+    data_1 = dict(random.sample(
+        options.items(),
+        k=random.randint(1, len(options))
+    ))
+    data_1['id'] = random.randint(0, 1000)
+    uri_1 = random_string()
+
+    model_obj_1 = get_model_obj(model_api_1, uri_1, data_1)
+
+    data_2 = dict(random.sample(
+        options.items(),
+        k=random.randint(1, len(options))
+    ))
+    data_2['id'] = random.randint(0, 1000)
+    uri_2 = random_string()
+
+    model_obj_2 = get_model_obj(model_api_2, uri_2, data_2)
+    assert model_obj_1 != model_obj_2
+    assert model_obj_1.data != model_obj_2.data
+    assert model_obj_1.id != model_obj_2.id
