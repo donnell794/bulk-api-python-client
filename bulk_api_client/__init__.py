@@ -12,7 +12,7 @@ from types import MethodType
 from io import BytesIO
 from urllib.parse import urljoin
 from tempfile import gettempdir
-from copy import deepcopy
+from copy import deepcopy, copy
 
 
 CERT_PATH = os.path.join(
@@ -474,25 +474,36 @@ class ModelAPI(object):
                      response.status_code, response.content)})
 
 
+def _get_f(field):
+    def get_f(cls):
+        return cls.data.get(field)
+    return get_f
+
+
+def _set_f(field, model):
+    def set_f(cls, val):
+        if cls.model_api.app.client.definitions[model]['properties'][
+                field].get('readOnly', False):
+            raise BulkAPIError({'ModelObj':
+                                "Cannot set a read only property"})
+        cls.data[field] = val
+    return set_f
+
+
 def get_model_obj(model_api, uri, data=None):
-    ModelObj = deepcopy(_ModelObj(model_api, uri, data))
+    if not isinstance(model_api, ModelAPI):
+        raise BulkAPIError({'ModelObj':
+                            "Given model is not a ModelAPI object"})
+    ModelObj = deepcopy(_ModelObj)
     model = '.'.join(
         [model_api.app.app_label, model_api.model_name])
     model_properties = model_api.app.client.definitions[model][
         'properties']
     for field, model_property in model_properties.items():
-        def get_f(cls):
-            return cls.data.get(field)
-
+        get_f = _get_f(field)
         setattr(ModelObj, "get_%s" % field, get_f)
 
-        def set_f(cls, val):
-            if cls.model_api.app.client.definitions[model]['properties'][
-                    field].get('readOnly', False):
-                raise BulkAPIError({'ModelObj':
-                                    "Cannot set a read only property"})
-            cls.data[field] = val
-
+        set_f = _set_f(field, model)
         setattr(ModelObj, "set_%s" % field, set_f)
 
         setattr(
@@ -503,7 +514,7 @@ def get_model_obj(model_api, uri, data=None):
                 getattr(ModelObj, 'set_%s' % field)
             )
         )
-    return ModelObj
+    return ModelObj(model_api, uri, data)
 
 
 class _ModelObj:
@@ -524,9 +535,6 @@ class _ModelObj:
 
     def __init__(self, model_api, uri, data=None):
         self.model_api = model_api
-        if not isinstance(model_api, ModelAPI):
-            raise BulkAPIError({'ModelObj':
-                                "Given model is not a ModelAPI object"})
         self.uri = uri
         self.data = data
 

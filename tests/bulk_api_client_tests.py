@@ -476,7 +476,7 @@ def test_model_api_list(model_api):
     with mock.patch.object(ModelAPI, '_list', return_value=obj_data_list) as fn:
         obj_list = model_api.list(page=1)
         fn.assert_called_with(page=1)
-    assert all(isinstance(obj, ModelObj) for obj in obj_list)
+    assert all(isinstance(obj, _ModelObj) for obj in obj_list)
     assert all(x.data == y for x, y in zip(obj_list, obj_data_list))
 
 
@@ -535,7 +535,7 @@ def test_model_api_create(model_api):
     with mock.patch.object(ModelAPI, '_create', return_value=data) as fn:
         obj = model_api.create(obj_data)
         fn.assert_called_with(obj_data)
-    assert isinstance(obj, ModelObj)
+    assert isinstance(obj, _ModelObj)
     assert obj.data == data
 
 
@@ -580,7 +580,7 @@ def test_model_api_get(model_api):
     with mock.patch.object(ModelAPI, '_get', return_value=obj_data) as fn:
         obj = model_api.get(pk)
         fn.assert_called_with(uri)
-    assert isinstance(obj, ModelObj)
+    assert isinstance(obj, _ModelObj)
     assert obj.data == obj_data
 
 
@@ -698,10 +698,10 @@ def test_model_obj_get_data(model_api):
     """
     model_data = {'id': 1}
     uri = '/api/bulk_importer/examplefortesting/1'
-    with mock.patch.object(ModelObj, 'set_data') as fn_set:
+    with mock.patch.object(_ModelObj, 'set_data') as fn_set:
         with mock.patch.object(ModelAPI, '_get',
                                return_value=model_data) as fn_get:
-            model_obj = ModelObj(model_api, uri)
+            model_obj = get_model_obj(model_api, uri)
             not fn_set.called
             model_obj.get_data()
             fn_get.assert_called_with(model_obj.uri)
@@ -715,7 +715,7 @@ def test_model_obj_invalid_model(app_api):
     instance throws a BulkAPIError
     """
     with pytest.raises(BulkAPIError):
-        ModelObj(app_api, '/api/bulk_importer/examplefortesting/1')
+        get_model_obj(app_api, '/api/bulk_importer/examplefortesting/1')
 
 
 def test_model_obj_save(model_api):
@@ -723,7 +723,7 @@ def test_model_obj_save(model_api):
     _update method on its model_api property with the correct variables (PATCH)
     """
     model_data = {'id': 1}
-    model_obj = ModelObj(model_api, uri=random_string(), data=model_data)
+    model_obj = get_model_obj(model_api, uri=random_string(), data=model_data)
     with mock.patch.object(ModelAPI, '_update', return_value=200) as fn:
         model_obj.save()
         fn.assert_called_with(model_obj.uri, model_obj.data, patch=False)
@@ -736,7 +736,7 @@ def test_model_obj_invalid_save(model_api):
     """
 
     model_data = {'id': 1}
-    model_obj = ModelObj(model_api, uri=random_string(), data=model_data)
+    model_obj = get_model_obj(model_api, uri=random_string(), data=model_data)
     response = Response()
     response.status_code = 404
     with mock.patch.object(Client, 'request', return_value=response):
@@ -749,7 +749,7 @@ def test_model_obj_update(model_api):
     _update method on its model_api property with the correct variables (PUT)
     """
     model_data = {'id': 1, 'text': random_string()}
-    model_obj = ModelObj(model_api, uri=random_string(), data=model_data)
+    model_obj = get_model_obj(model_api, uri=random_string(), data=model_data)
     update_data = {'text': random_string()}
     data = {'id': 1, **update_data}
     with mock.patch.object(ModelAPI, '_update', return_value=data) as fn:
@@ -764,7 +764,7 @@ def test_model_obj_invalid_update(model_api):
     not 200 raises a BulkAPIError
     """
     model_data = {'id': 1}
-    model_obj = ModelObj(model_api, uri=random_string(), data=model_data)
+    model_obj = get_model_obj(model_api, uri=random_string(), data=model_data)
     response = Response()
     response.status_code = 404
     with mock.patch.object(Client, 'request', return_value=response):
@@ -777,7 +777,7 @@ def test_model_obj_delete(model_api):
     _delete method on its model_api property with the correct variables
     """
     model_data = {'id': 1}
-    model_obj = ModelObj(model_api, uri=random_string(), data=model_data)
+    model_obj = get_model_obj(model_api, uri=random_string(), data=model_data)
     with mock.patch.object(ModelAPI, '_delete', return_value=200) as fn:
         model_obj.delete()
         fn.assert_called_with(model_obj.uri)
@@ -789,7 +789,7 @@ def test_model_obj_invalid_delete(model_api):
     not 200 raises a BulkAPIError
     """
     model_data = {'id': 1}
-    model_obj = ModelObj(model_api, uri=random_string(), data=model_data)
+    model_obj = get_model_obj(model_api, uri=random_string(), data=model_data)
     response = Response()
     response.status_code = 404
     with mock.patch.object(Client, 'request', return_value=response):
@@ -798,8 +798,8 @@ def test_model_obj_invalid_delete(model_api):
 
 
 def test_model_obj_property_duplication_regression(app_api):
-    model_name_1 = random_string().lower()
-    model_name_2 = random_string().lower()
+    model_name_1 = "model_1"
+    model_name_2 = "model_2"
     data = {
         model_name_1: urljoin(app_api.client.api_url, model_name_1),
         model_name_2: urljoin(app_api.client.api_url, model_name_2),
@@ -807,7 +807,19 @@ def test_model_obj_property_duplication_regression(app_api):
     model_1 = '.'.join([app_api.app_label, model_name_1])
     model_2 = '.'.join([app_api.app_label, model_name_2])
     app_api.client.definitions.pop('bulk_importer.examplefortesting')
-    properties = {
+    model_1_properties = {
+        'id': {
+            'title': 'ID',
+            'type': 'integer',
+            'readOnly': True
+        },
+        'text': {
+            'title': 'Text',
+            'type': 'string',
+            'minLength': 1
+        },
+    }
+    model_2_properties = {
         'id': {
             'title': 'ID',
             'type': 'integer',
@@ -819,11 +831,6 @@ def test_model_obj_property_duplication_regression(app_api):
             'maxLength': 256,
             'minLength': 1
         },
-        'text': {
-            'title': 'Text',
-            'type': 'string',
-            'minLength': 1
-        },
         'integer': {
             'title': 'Integer',
             'type': 'integer',
@@ -833,16 +840,10 @@ def test_model_obj_property_duplication_regression(app_api):
         },
     }
     app_api.client.definitions[model_1] = {
-        'properties': dict(random.sample(
-            properties.items(),
-            k=random.randint(1, len(properties))
-        ))
+        'properties': model_1_properties
     }
     app_api.client.definitions[model_2] = {
-        'properties': dict(random.sample(
-            properties.items(),
-            k=random.randint(1, len(properties))
-        ))
+        'properties': model_2_properties
     }
     response = Response()
     response._content = json.dumps(data)
@@ -852,28 +853,24 @@ def test_model_obj_property_duplication_regression(app_api):
         model_api_1 = ModelAPI(app_api, model_name_1)
         model_api_2 = ModelAPI(app_api, model_name_2)
     assert model_api_1 != model_api_2
-    options = {
-        'text': random_string(),
-        'name': random_string(),
-        'integer': random.randint(-2147483648, 2147483647),
+    data_1 = {
+        'id': 1,
+        'text': "model_1_text",
     }
-    data_1 = dict(random.sample(
-        options.items(),
-        k=random.randint(1, len(options))
-    ))
-    data_1['id'] = random.randint(0, 1000)
-    uri_1 = random_string()
+    uri_1 = "/app/model/1"
 
     model_obj_1 = get_model_obj(model_api_1, uri_1, data_1)
 
-    data_2 = dict(random.sample(
-        options.items(),
-        k=random.randint(1, len(options))
-    ))
-    data_2['id'] = random.randint(0, 1000)
-    uri_2 = random_string()
+    data_2 = {
+        'id': 22,
+        'name': "model_2_name",
+        'integer': 2,
+    }
+    uri_2 = "/app/model/22"
 
     model_obj_2 = get_model_obj(model_api_2, uri_2, data_2)
-    assert model_obj_1 != model_obj_2
-    assert model_obj_1.data != model_obj_2.data
-    assert model_obj_1.id != model_obj_2.id
+    assert model_obj_1.id == 1
+    assert model_obj_1.text == "model_1_text"
+    assert model_obj_2.id == 22
+    assert model_obj_2.name == "model_2_name"
+    assert model_obj_2.integer == 2
