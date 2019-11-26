@@ -877,16 +877,22 @@ def test_model_obj_property_duplication_regression(app_api):
     assert model_obj_2.id == 22
     assert model_obj_2.name == "model_2_name"
     assert model_obj_2.integer == 2
+    assert not model_obj_2.text
 
 
-def test_model_obj_fk_property(model_api):
+def test_model_obj_fk_property(app_api):
     """Test ModelObj foreign key property, where a get should return a ModelObj
     of the related model and a set should update the property as well as the uri
     reference
     """
-    model = '.'.join([model_api.app.app_label, model_api.model_name])
-    realted_model_name = random_string()
-    related_model = '.'.join([model_api.app.app_label, realted_model_name])
+    model_name = random_string().lower()
+    related_model_name = random_string().lower()
+    updated_model_name = random_string().lower()
+
+    model = '.'.join([app_api.app_label, model_name])
+    related_model = '.'.join([app_api.app_label, related_model_name])
+    updated_model = '.'.join([app_api.app_label, updated_model_name])
+
     model_properties = {
         'id': {
             'title': 'ID',
@@ -916,30 +922,6 @@ def test_model_obj_fk_property(model_api):
             'minLength': 1
         },
     }
-    uri = "/app/model/1"
-    related_model_uri = "/app/related_model/1"
-    data = {
-        'id': 1,
-        'text': "model_text",
-        'parent': related_model_uri,
-    }
-    related_model_data = {
-        'id': 1,
-        'text': "related_model_text",
-    }
-    model_api.app.client.definitions[model]['properties'] = model_properties
-    model_api.app.client.definitions[related_model] = {
-        'properties': related_model_properties}
-    model_obj = get_model_obj(model_api, uri, data)
-    assert model_obj.data['parent'] == related_model_uri
-    with mock.patch.object(ModelAPI, '_get', return_value=related_model_data):
-        related_model_obj = model_obj.parent
-        assert isinstance(related_model_obj, _ModelObj)
-        assert related_model_obj.id == related_model_data['id']
-        assert related_model_obj.text == related_model_data['text']
-
-    updated_model_name = random_string()
-    updated_model = '.'.join([model_api.app.app_label, updated_model_name])
     updated_model_properties = {
         'id': {
             'title': 'ID',
@@ -954,20 +936,71 @@ def test_model_obj_fk_property(model_api):
             'x-nullable': True
         },
     }
-    model_api.app.client.definitions[updated_model] = {
-        'properties': updated_model_properties}
-    updated_model_uri = "/app/updated_model/1"
-    updated_data = {
+    uri = "/{}/{}/{}".format(app_api.app_label, model_name, 1)
+    related_model_uri = "/{}/{}/{}".format(
+        app_api.app_label,
+        related_model_name,
+        22
+    )
+    updated_model_uri = "/{}/{}/{}".format(
+        app_api.app_label,
+        updated_model_name,
+        333
+    )
+    data = {
         'id': 1,
+        'text': "model_text",
+        'parent': related_model_uri,
+    }
+    related_model_data = {
+        'id': 22,
+        'text': "related_model_text",
+    }
+    updated_data = {
+        'id': 333,
         'integer': 5,
     }
+
+    app_api.client.definitions[model] = {
+        'properties': model_properties}
+    app_api.client.definitions[related_model] = {
+        'properties': related_model_properties}
+    app_api.client.definitions[updated_model] = {
+        'properties': updated_model_properties}
+    response_data = {
+        model_name: urljoin(app_api.client.api_url, model_name),
+        related_model_name: urljoin(app_api.client.api_url, related_model_name),
+        updated_model_name: urljoin(app_api.client.api_url, updated_model_name),
+    }
+    response = Response()
+    response._content = json.dumps(response_data)
+    response.status_code = 200
+
+    with mock.patch.object(Client, 'request', return_value=response) as fn:
+        model_api = ModelAPI(app_api, model_name)
+        related_model_api = ModelAPI(app_api, related_model_name)
+        updated_model_api = ModelAPI(app_api, updated_model_name)
+    model_obj = get_model_obj(model_api, uri, data)
+    assert model_obj.data['parent'] == related_model_uri
+    res_data = {
+        app_api.app_label: urljoin(app_api.client.api_url, app_api.app_label),
+    }
+    response._content = json.dumps(res_data)
+    with mock.patch.object(ModelAPI, '_get', return_value=related_model_data):
+        with mock.patch.object(Client, 'request', return_value=response):
+            related_model_obj = model_obj.parent
+        assert isinstance(related_model_obj, _ModelObj)
+        assert related_model_obj.id == related_model_data['id']
+        assert related_model_obj.text == related_model_data['text']
+        assert not related_model_obj.parent
+
     updated_model_obj = get_model_obj(
-        model_api,
+        updated_model_api,
         updated_model_uri,
         updated_data
     )
-    related_model_obj = updated_model_obj
+    model_obj.parent = updated_model_obj
     assert model_obj.data['parent'] == updated_model_uri
     with mock.patch.object(ModelAPI, '_get', return_value=updated_data):
-        assert related_model_obj.id == updated_data['id']
-        assert related_model_obj.integer == updated_data['integer']
+        assert model_obj.parent.id == updated_data['id']
+        assert model_obj.parent.integer == updated_data['integer']
