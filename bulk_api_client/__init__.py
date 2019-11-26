@@ -474,18 +474,28 @@ class ModelAPI(object):
                      response.status_code, response.content)})
 
 
-def _get_f(field):
+def _get_f(field, properties):
     def get_f(cls):
-        return cls.data.get(field)
+        field_val = cls.data.get(field)
+        if properties[field].get('format') == 'uri':
+            if hasattr(cls, "_%s" % field):
+                return getattr(cls, "_%s" % field)
+            related_obj = get_model_obj(
+                cls.model_api,
+                field_val
+            )
+            return related_obj
+        return field_val
     return get_f
 
 
-def _set_f(field, model):
+def _set_f(field, properties):
     def set_f(cls, val):
-        if cls.model_api.app.client.definitions[model]['properties'][
-                field].get('readOnly', False):
+        if properties[field].get('readOnly', False):
             raise BulkAPIError({'ModelObj':
                                 "Cannot set a read only property"})
+        if properties[field].get('format') == 'uri':
+            pass
         cls.data[field] = val
     return set_f
 
@@ -499,11 +509,11 @@ def get_model_obj(model_api, uri, data=None):
         [model_api.app.app_label, model_api.model_name])
     model_properties = model_api.app.client.definitions[model][
         'properties']
-    for field, model_property in model_properties.items():
-        get_f = _get_f(field)
+    for field, property_dict in model_properties.items():
+        get_f = _get_f(field, model_properties)
         setattr(ModelObj, "get_%s" % field, get_f)
 
-        set_f = _set_f(field, model)
+        set_f = _set_f(field, model_properties)
         setattr(ModelObj, "set_%s" % field, set_f)
 
         setattr(

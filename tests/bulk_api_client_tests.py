@@ -798,6 +798,9 @@ def test_model_obj_invalid_delete(model_api):
 
 
 def test_model_obj_property_duplication_regression(app_api):
+    """Test regression caused by creating multple ModelObjs, where properties
+    and data are duplicated inconsistently throughout each model
+    """
     model_name_1 = "model_1"
     model_name_2 = "model_2"
     data = {
@@ -874,3 +877,97 @@ def test_model_obj_property_duplication_regression(app_api):
     assert model_obj_2.id == 22
     assert model_obj_2.name == "model_2_name"
     assert model_obj_2.integer == 2
+
+
+def test_model_obj_fk_property(model_api):
+    """Test ModelObj foreign key property, where a get should return a ModelObj
+    of the related model and a set should update the property as well as the uri
+    reference
+    """
+    model = '.'.join([model_api.app.app_label, model_api.model_name])
+    realted_model_name = random_string()
+    related_model = '.'.join([model_api.app.app_label, realted_model_name])
+    model_properties = {
+        'id': {
+            'title': 'ID',
+            'type': 'integer',
+            'readOnly': True
+        },
+        'text': {
+            'title': 'Text',
+            'type': 'string',
+            'minLength': 1
+        },
+        'parent': {
+            'title': 'Parent',
+            'type': 'string',
+            'format': 'uri'
+        }
+    }
+    related_model_properties = {
+        'id': {
+            'title': 'ID',
+            'type': 'integer',
+            'readOnly': True
+        },
+        'text': {
+            'title': 'Text',
+            'type': 'string',
+            'minLength': 1
+        },
+    }
+    uri = "/app/model/1"
+    related_model_uri = "/app/related_model/1"
+    data = {
+        'id': 1,
+        'text': "model_text",
+        'parent': related_model_uri,
+    }
+    related_model_data = {
+        'id': 1,
+        'text': "related_model_text",
+    }
+    model_api.app.client.definitions[model]['properties'] = model_properties
+    model_api.app.client.definitions[related_model] = {
+        'properties': related_model_properties}
+    model_obj = get_model_obj(model_api, uri, data)
+    assert model_obj.data['parent'] == related_model_uri
+    with mock.patch.object(ModelAPI, '_get', return_value=related_model_data):
+        related_model_obj = model_obj.parent
+        assert isinstance(related_model_obj, _ModelObj)
+        assert related_model_obj.id == related_model_data['id']
+        assert related_model_obj.text == related_model_data['text']
+
+    updated_model_name = random_string()
+    updated_model = '.'.join([model_api.app.app_label, updated_model_name])
+    updated_model_properties = {
+        'id': {
+            'title': 'ID',
+            'type': 'integer',
+            'readOnly': True
+        },
+        'integer': {
+            'title': 'Integer',
+            'type': 'integer',
+            'maximum': 2147483647,
+            'minimum': -2147483648,
+            'x-nullable': True
+        },
+    }
+    model_api.app.client.definitions[updated_model] = {
+        'properties': updated_model_properties}
+    updated_model_uri = "/app/updated_model/1"
+    updated_data = {
+        'id': 1,
+        'integer': 5,
+    }
+    updated_model_obj = get_model_obj(
+        model_api,
+        updated_model_uri,
+        updated_data
+    )
+    related_model_obj = updated_model_obj
+    assert model_obj.data['parent'] == updated_model_uri
+    with mock.patch.object(ModelAPI, '_get', return_value=updated_data):
+        assert related_model_obj.id == updated_data['id']
+        assert related_model_obj.integer == updated_data['integer']
