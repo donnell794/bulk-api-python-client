@@ -878,8 +878,9 @@ def test_model_obj_property_duplication_regression(app_api):
     assert model_obj_2.id == 22
     assert model_obj_2.name == "model_2_name"
     assert model_obj_2.integer == 2
-    assert not model_obj_2.text
-
+    assert not hasattr(model_obj_1, 'name')
+    assert not hasattr(model_obj_2, 'integer')
+    assert not hasattr(model_obj_2, 'text')
 
 def test_model_obj_fk_property(app_api):
     """Test ModelObj foreign key property, where a get should return a ModelObj

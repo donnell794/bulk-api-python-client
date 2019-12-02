@@ -411,7 +411,6 @@ class ModelAPI(object):
             self.model_name]
         uri = os.path.join(path, str(pk))
         data = self._get(uri)
-        breakpoint()
         return get_model_obj(self, uri, data=data)
 
     def _update(self, uri, obj_data, patch=True):
