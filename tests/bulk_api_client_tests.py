@@ -878,6 +878,9 @@ def test_model_obj_property_duplication_regression(app_api):
     assert model_obj_2.id == 22
     assert model_obj_2.name == "model_2_name"
     assert model_obj_2.integer == 2
+
+    assert not model_obj_1.name
+    assert not model_obj_1.integer
     assert not model_obj_2.text
 
 
