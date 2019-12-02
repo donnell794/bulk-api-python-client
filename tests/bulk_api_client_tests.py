@@ -582,6 +582,7 @@ def test_model_api_get(model_api):
         fn.assert_called_with(uri)
     assert isinstance(obj, _ModelObj)
     assert obj.data == obj_data
+    assert obj.uri == uri
 
 
 def test_model_api_update(model_api):
@@ -589,7 +590,7 @@ def test_model_api_update(model_api):
     correct parameters"""
 
     path = model_api.app.client.app_api_urls[model_api.app.app_label]
-    uri = uri = '/api/bulk_importer/examplefortesting/1016'
+    uri = uri = '/bulk/api/bulk_importer/examplefortesting/1016'
     url = urljoin(path, os.path.join(model_api.model_name, uri))
     obj_data = {
         'text': 'EYdVWVxempVwBpqMENtuYmGZJskLE',
@@ -622,7 +623,7 @@ def test_model_api_partial_update(model_api):
     correct parameters"""
 
     path = model_api.app.client.app_api_urls[model_api.app.app_label]
-    uri = '/api/bulk_importer/examplefortesting/1016'
+    uri = '/bulk/api/bulk_importer/examplefortesting/1016'
     url = urljoin(path, os.path.join(model_api.model_name, uri))
     obj_data = {
         'text': 'EYdVWVxempVwBpqMENtuYmGZJskLE',
@@ -657,7 +658,7 @@ def test_model_api_delete(model_api):
     """Test ModelAPI list method works as intented"""
 
     path = model_api.app.client.app_api_urls[model_api.app.app_label]
-    uri = '/api/bulk_importer/examplefortesting/1016'
+    uri = '/bulk/api/bulk_importer/examplefortesting/1016'
     url = urljoin(path, os.path.join(model_api.model_name, uri))
     response = Response()
     response.status_code = 204
@@ -667,8 +668,8 @@ def test_model_api_delete(model_api):
 
 
 @pytest.mark.parametrize("uri,data", [
-    ('/api/bulk_importer/examplefortesting/1', {}),
-    ('/api/bulk_importer/examplefortesting/1',
+    ('/bulk/api/bulk_importer/examplefortesting/1', {}),
+    ('/bulk/api/bulk_importer/examplefortesting/1',
      {'text': random_string()}),
 ])
 def test_model_obj(model_api, uri, data):
@@ -697,7 +698,7 @@ def test_model_obj_get_data(model_api):
     when data isn't set on instance creation
     """
     model_data = {'id': 1}
-    uri = '/api/bulk_importer/examplefortesting/1'
+    uri = '/bulk/api/bulk_importer/examplefortesting/1'
     with mock.patch.object(_ModelObj, 'set_data') as fn_set:
         with mock.patch.object(ModelAPI, '_get',
                                return_value=model_data) as fn_get:
@@ -860,7 +861,7 @@ def test_model_obj_property_duplication_regression(app_api):
         'id': 1,
         'text': "model_1_text",
     }
-    uri_1 = "/app/model/1"
+    uri_1 = "/bulk/api/app/model/1"
 
     model_obj_1 = get_model_obj(model_api_1, uri_1, data_1)
 
@@ -869,7 +870,7 @@ def test_model_obj_property_duplication_regression(app_api):
         'name': "model_2_name",
         'integer': 2,
     }
-    uri_2 = "/app/model/22"
+    uri_2 = "/bulk/api/app/model/22"
 
     model_obj_2 = get_model_obj(model_api_2, uri_2, data_2)
     assert model_obj_1.id == 1
@@ -936,13 +937,13 @@ def test_model_obj_fk_property(app_api):
             'x-nullable': True
         },
     }
-    uri = "/{}/{}/{}".format(app_api.app_label, model_name, 1)
-    related_model_uri = "/{}/{}/{}".format(
+    uri = "/bulk/api/{}/{}/{}".format(app_api.app_label, model_name, 1)
+    related_model_uri = "/bulk/api/{}/{}/{}".format(
         app_api.app_label,
         related_model_name,
         22
     )
-    updated_model_uri = "/{}/{}/{}".format(
+    updated_model_uri = "/bulk/api/{}/{}/{}".format(
         app_api.app_label,
         updated_model_name,
         333
@@ -955,12 +956,13 @@ def test_model_obj_fk_property(app_api):
     related_model_data = {
         'id': 22,
         'text': "related_model_text",
+        # 'integer': 5,
     }
     updated_data = {
         'id': 333,
         'integer': 5,
     }
-
+    app_api.client.definitions.pop('bulk_importer.examplefortesting')
     app_api.client.definitions[model] = {
         'properties': model_properties}
     app_api.client.definitions[related_model] = {
@@ -978,7 +980,6 @@ def test_model_obj_fk_property(app_api):
 
     with mock.patch.object(Client, 'request', return_value=response) as fn:
         model_api = ModelAPI(app_api, model_name)
-        related_model_api = ModelAPI(app_api, related_model_name)
         updated_model_api = ModelAPI(app_api, updated_model_name)
     model_obj = get_model_obj(model_api, uri, data)
     assert model_obj.data['parent'] == related_model_uri

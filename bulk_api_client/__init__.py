@@ -411,6 +411,7 @@ class ModelAPI(object):
             self.model_name]
         uri = os.path.join(path, str(pk))
         data = self._get(uri)
+        breakpoint()
         return get_model_obj(self, uri, data=data)
 
     def _update(self, uri, obj_data, patch=True):
@@ -480,8 +481,11 @@ def _get_f(field, properties):
         if properties[field].get('format') == 'uri':
             if hasattr(cls, "_%s" % field):
                 return getattr(cls, "_%s" % field)
+            app_label, model_name, id = field_val.split('/')[3:]
+            app = AppAPI(cls.model_api.app.client, app_label)
+            model = ModelAPI(app, model_name)
             related_obj = get_model_obj(
-                cls.model_api,
+                model,
                 field_val
             )
             return related_obj
@@ -495,7 +499,11 @@ def _set_f(field, properties):
             raise BulkAPIError({'ModelObj':
                                 "Cannot set a read only property"})
         if properties[field].get('format') == 'uri':
-            pass
+            if not isinstance(val, _ModelObj):
+                raise BulkAPIError({'ModelObj':
+                                    "New related model must be a _ModelObj"})
+            setattr(cls, "_%s" % field, val)
+            val = val.uri
         cls.data[field] = val
     return set_f
 
