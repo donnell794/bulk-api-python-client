@@ -481,8 +481,7 @@ def _get_f(field, properties):
             if hasattr(cls, "_%s" % field):
                 return getattr(cls, "_%s" % field)
             app_label, model_name, id = field_val.split('/')[3:]
-            app = AppAPI(cls.model_api.app.client, app_label)
-            model = ModelAPI(app, model_name)
+            model = cls.model_api.app.client.app(app_label).model(model_name)
             related_obj = get_model_obj(
                 model,
                 field_val
