@@ -510,26 +510,29 @@ def get_model_obj(model_api, uri, data=None):
     if not isinstance(model_api, ModelAPI):
         raise BulkAPIError({'ModelObj':
                             "Given model is not a ModelAPI object"})
-    ModelObj = deepcopy(_ModelObj)
-    model = '.'.join(
-        [model_api.app.app_label, model_api.model_name])
-    model_properties = model_api.app.client.definitions[model][
-        'properties']
-    for field, property_dict in model_properties.items():
-        get_f = _get_f(field, model_properties)
-        setattr(ModelObj, "get_%s" % field, get_f)
 
-        set_f = _set_f(field, model_properties)
-        setattr(ModelObj, "set_%s" % field, set_f)
+    class ModelObj(_ModelObj):
+        def __init__(self, model_api, uri, data=None):
+            super().__init__(model_api, uri, data)
+            model = '.'.join(
+                [model_api.app.app_label, model_api.model_name])
+            model_properties = model_api.app.client.definitions[model][
+                'properties']
+            for field, property_dict in model_properties.items():
+                get_f = _get_f(field, model_properties)
+                setattr(self, "get_%s" % field, get_f)
 
-        setattr(
-            ModelObj,
-            field,
-            property(
-                getattr(ModelObj, 'get_%s' % field),
-                getattr(ModelObj, 'set_%s' % field)
-            )
-        )
+                set_f = _set_f(field, model_properties)
+                setattr(self, "set_%s" % field, set_f)
+
+                setattr(
+                    ModelObj,
+                    field,
+                    property(
+                        getattr(self, 'get_%s' % field),
+                        getattr(self, 'set_%s' % field)
+                    )
+                )
     return ModelObj(model_api, uri, data)
 
 

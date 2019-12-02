@@ -879,7 +879,7 @@ def test_model_obj_property_duplication_regression(app_api):
     assert model_obj_2.name == "model_2_name"
     assert model_obj_2.integer == 2
     assert not hasattr(model_obj_1, 'name')
-    assert not hasattr(model_obj_2, 'integer')
+    assert not hasattr(model_obj_1, 'integer')
     assert not hasattr(model_obj_2, 'text')
 
 
@@ -958,7 +958,6 @@ def test_model_obj_fk_property(app_api):
     related_model_data = {
         'id': 22,
         'text': "related_model_text",
-        # 'integer': 5,
     }
     updated_data = {
         'id': 333,
@@ -995,7 +994,7 @@ def test_model_obj_fk_property(app_api):
         assert isinstance(related_model_obj, _ModelObj)
         assert related_model_obj.id == related_model_data['id']
         assert related_model_obj.text == related_model_data['text']
-        assert not related_model_obj.parent
+        assert not hasattr(related_model_obj, 'parent')
 
     updated_model_obj = get_model_obj(
         updated_model_api,
@@ -1007,3 +1006,4 @@ def test_model_obj_fk_property(app_api):
     with mock.patch.object(ModelAPI, '_get', return_value=updated_data):
         assert model_obj.parent.id == updated_data['id']
         assert model_obj.parent.integer == updated_data['integer']
+        assert not hasattr(model_obj.parent, 'parent')
