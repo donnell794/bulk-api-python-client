@@ -4,15 +4,11 @@ import requests
 import requests_cache
 import json
 import re
-import shutil
-import sys
 import yaml
 
-from types import MethodType
 from io import BytesIO
 from urllib.parse import urljoin
 from tempfile import gettempdir
-from copy import deepcopy, copy
 
 
 CERT_PATH = os.path.join(
@@ -497,7 +493,7 @@ def _set_f(field, properties):
             raise BulkAPIError({'ModelObj':
                                 "Cannot set a read only property"})
         if properties[field].get('format') == 'uri':
-            if not isinstance(val, _ModelObj):
+            if not isinstance(val, ModelObj):
                 raise BulkAPIError({'ModelObj':
                                     "New related model must be a _ModelObj"})
             setattr(cls, "_%s" % field, val)
@@ -506,37 +502,7 @@ def _set_f(field, properties):
     return set_f
 
 
-def get_model_obj(model_api, uri, data=None):
-    if not isinstance(model_api, ModelAPI):
-        raise BulkAPIError({'ModelObj':
-                            "Given model is not a ModelAPI object"})
-
-    class ModelObj(_ModelObj):
-        def __init__(self, model_api, uri, data=None):
-            super().__init__(model_api, uri, data)
-            model = '.'.join(
-                [model_api.app.app_label, model_api.model_name])
-            model_properties = model_api.app.client.definitions[model][
-                'properties']
-            for field, property_dict in model_properties.items():
-                get_f = _get_f(field, model_properties)
-                setattr(self, "get_%s" % field, get_f)
-
-                set_f = _set_f(field, model_properties)
-                setattr(self, "set_%s" % field, set_f)
-
-                setattr(
-                    ModelObj,
-                    field,
-                    property(
-                        getattr(self, 'get_%s' % field),
-                        getattr(self, 'set_%s' % field)
-                    )
-                )
-    return ModelObj(model_api, uri, data)
-
-
-class _ModelObj:
+class ModelObj:
     """
     Returns an object with proerties of the given model to be modified directly
     and reflected in the database. Must call the get_model_obj funnction to get
@@ -553,6 +519,9 @@ class _ModelObj:
     """
 
     def __init__(self, model_api, uri, data=None):
+        if not isinstance(model_api, ModelAPI):
+            raise BulkAPIError({'ModelObj':
+                                "Given model is not a ModelAPI object"})
         self.model_api = model_api
         self.uri = uri
         self.data = data
@@ -567,6 +536,31 @@ class _ModelObj:
         return self._data
 
     data = property(get_data, set_data)
+
+    @classmethod
+    def with_properties(cls, model_api, uri, data=None):
+        class ModelObjWithProperties(ModelObj):
+            pass
+        model = '.'.join(
+            [model_api.app.app_label, model_api.model_name])
+        model_properties = model_api.app.client.definitions[model][
+            'properties']
+        for field, property_dict in model_properties.items():
+            get_f = _get_f(field, model_properties)
+            setattr(ModelObjWithProperties, "get_%s" % field, get_f)
+
+            set_f = _set_f(field, model_properties)
+            setattr(ModelObjWithProperties, "set_%s" % field, set_f)
+
+            setattr(
+                ModelObjWithProperties,
+                field,
+                property(
+                    getattr(ModelObjWithProperties, 'get_%s' % field),
+                    getattr(ModelObjWithProperties, 'set_%s' % field)
+                )
+            )
+        return ModelObjWithProperties(model_api, uri, data)
 
     def save(self):
         """Makes a call to the put update method of the model_api object
