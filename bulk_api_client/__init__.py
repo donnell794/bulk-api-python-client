@@ -471,6 +471,18 @@ class ModelAPI(object):
 
 
 def _get_f(field, properties):
+    """Dynamically builds a getter method using a string represnting the name of
+     the property and properties of the attribute. Internal getter method used
+     by ModelObj with_properties class method.
+
+    Args:
+        field (str): ModelAPI its related to
+        properties (dict): uri of the resource
+
+    Returns:
+
+
+    """
     def get_f(cls):
         field_val = cls.data.get(field)
         if properties[field].get('format') == 'uri':
@@ -478,7 +490,7 @@ def _get_f(field, properties):
                 return getattr(cls, "_%s" % field)
             app_label, model_name, id = field_val.split('/')[3:]
             model = cls.model_api.app.client.app(app_label).model(model_name)
-            related_obj = ModelObj(
+            related_obj = ModelObj.with_properties(
                 model,
                 field_val
             )
@@ -488,6 +500,17 @@ def _get_f(field, properties):
 
 
 def _set_f(field, properties):
+    """Dynamically builds a setter method using a string represnting the name of
+     the property and properties of the attribute. Internal getter method used
+     by ModelObj with_properties class method.
+
+    Args:
+        field (str): ModelAPI its related to
+        properties (dict): uri of the resource
+
+    Returns:
+
+    """
     def set_f(cls, val):
         if properties[field].get('readOnly', False):
             raise BulkAPIError({'ModelObj':
@@ -504,9 +527,9 @@ def _set_f(field, properties):
 
 class ModelObj:
     """
-    Returns an object with proerties of the given model to be modified directly
-    and reflected in the database. Must call the get_model_obj funnction to get
-    properties
+    **DO NOT CALL DIRECTLY**
+    Base object which handles mapping local data to api actions. Must call the
+    with_properties class method funnction to get properties
 
     Args:
         model_api (obj): ModelAPI its related to
@@ -519,9 +542,6 @@ class ModelObj:
     """
 
     def __init__(self, model_api, uri, data=None):
-        if not isinstance(model_api, ModelAPI):
-            raise BulkAPIError({'ModelObj':
-                                "Given model is not a ModelAPI object"})
         self.model_api = model_api
         self.uri = uri
         self.data = data
@@ -539,7 +559,24 @@ class ModelObj:
 
     @classmethod
     def with_properties(cls, model_api, uri, data=None):
-        class ModelObjWithProperties(ModelObj):
+        """
+        Returns an object with proerties of the given model to be modified
+        directly and reflected in the database. Mimics objects used by ORMs
+
+        Args:
+            model_api (obj): ModelAPI its related to
+            uri (str): uri of the resource
+            data (dict): property which memoizes _data
+
+        Returns:
+            ModelObjWithProperties obj
+
+        """
+        if not isinstance(model_api, ModelAPI):
+            raise BulkAPIError({'ModelObj':
+                                "Given model is not a ModelAPI object"})
+
+        class ModelObjWithProperties(cls):
             pass
         model = '.'.join(
             [model_api.app.app_label, model_api.model_name])
