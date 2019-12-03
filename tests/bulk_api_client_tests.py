@@ -990,7 +990,6 @@ def test_model_obj_fk_property(app_api):
     response._content = json.dumps(res_data)
     with mock.patch.object(ModelAPI, '_get', return_value=related_model_data):
         with mock.patch.object(Client, 'request', return_value=response):
-            breakpoint()
             related_model_obj = model_obj.parent
         assert isinstance(related_model_obj, ModelObj)
         assert related_model_obj.id == related_model_data['id']
