@@ -8,7 +8,7 @@ from unittest import mock
 from urllib.parse import urljoin
 from requests.models import Response
 
-from bulk_api_client import Client, AppAPI, ModelAPI, _ModelObj, get_model_obj
+from bulk_api_client import Client, AppAPI, ModelAPI, ModelObj
 from bulk_api_client import requests
 
 
@@ -123,7 +123,6 @@ def model_obj(model_api):
         options.items(),
         k=random.randint(1, len(options))
     ))
-    with mock.patch.object(ModelAPI, '_get',
-                           return_value={'id': 1}) as fn_get:
-        model_obj = get_model_obj(model_api, uri, data)
+    with mock.patch.object(ModelAPI, '_get', return_value={'id': 1}):
+        model_obj = ModelObj(model_api, uri, data)
     return model_obj

@@ -10,7 +10,7 @@ from pandas import DataFrame, read_csv
 from urllib.parse import urljoin
 from requests.models import Response
 
-from bulk_api_client import Client, AppAPI, ModelAPI, _ModelObj, get_model_obj
+from bulk_api_client import Client, AppAPI, ModelAPI, ModelObj
 from bulk_api_client import (requests, CERT_PATH, BulkAPIError, is_kv,
                              requests_cache)
 
@@ -790,7 +790,7 @@ def test_model_obj_invalid_delete(model_api):
     not 200 raises a BulkAPIError
     """
     model_data = {'id': 1}
-    model_obj = get_model_obj(model_api, uri=random_string(), data=model_data)
+    model_obj = ModelObj(model_api, uri=random_string(), data=model_data)
     response = Response()
     response.status_code = 404
     with mock.patch.object(Client, 'request', return_value=response):
@@ -853,7 +853,7 @@ def test_model_obj_property_duplication_regression(app_api):
     response._content = json.dumps(data)
     response.status_code = 200
 
-    with mock.patch.object(Client, 'request', return_value=response) as fn:
+    with mock.patch.object(Client, 'request', return_value=response):
         model_api_1 = ModelAPI(app_api, model_name_1)
         model_api_2 = ModelAPI(app_api, model_name_2)
     assert model_api_1 != model_api_2
@@ -863,7 +863,7 @@ def test_model_obj_property_duplication_regression(app_api):
     }
     uri_1 = "/bulk/api/app/model/1"
 
-    model_obj_1 = get_model_obj(model_api_1, uri_1, data_1)
+    model_obj_1 = ModelObj(model_api_1, uri_1, data_1)
 
     data_2 = {
         'id': 22,
@@ -872,7 +872,7 @@ def test_model_obj_property_duplication_regression(app_api):
     }
     uri_2 = "/bulk/api/app/model/22"
 
-    model_obj_2 = get_model_obj(model_api_2, uri_2, data_2)
+    model_obj_2 = ModelObj(model_api_2, uri_2, data_2)
     assert model_obj_1.id == 1
     assert model_obj_1.text == "model_1_text"
     assert model_obj_2.id == 22
@@ -979,10 +979,10 @@ def test_model_obj_fk_property(app_api):
     response._content = json.dumps(response_data)
     response.status_code = 200
 
-    with mock.patch.object(Client, 'request', return_value=response) as fn:
+    with mock.patch.object(Client, 'request', return_value=response):
         model_api = ModelAPI(app_api, model_name)
         updated_model_api = ModelAPI(app_api, updated_model_name)
-    model_obj = get_model_obj(model_api, uri, data)
+    model_obj = ModelObj(model_api, uri, data)
     assert model_obj.data['parent'] == related_model_uri
     res_data = {
         app_api.app_label: urljoin(app_api.client.api_url, app_api.app_label),
@@ -990,13 +990,14 @@ def test_model_obj_fk_property(app_api):
     response._content = json.dumps(res_data)
     with mock.patch.object(ModelAPI, '_get', return_value=related_model_data):
         with mock.patch.object(Client, 'request', return_value=response):
+            breakpoint()
             related_model_obj = model_obj.parent
-        assert isinstance(related_model_obj, _ModelObj)
+        assert isinstance(related_model_obj, ModelObj)
         assert related_model_obj.id == related_model_data['id']
         assert related_model_obj.text == related_model_data['text']
         assert not hasattr(related_model_obj, 'parent')
 
-    updated_model_obj = get_model_obj(
+    updated_model_obj = ModelObj(
         updated_model_api,
         updated_model_uri,
         updated_data
