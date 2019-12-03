@@ -323,7 +323,7 @@ class ModelAPI(object):
         objs = []
         for obj_data in data:
             uri = os.path.join(path, str(obj_data['id']))
-            objs.append(get_model_obj(self, uri, data=obj_data))
+            objs.append(ModelObj.with_properties(self, uri, data=obj_data))
         return objs
 
     def _create(self, obj_data):
@@ -370,7 +370,7 @@ class ModelAPI(object):
         path = self.app.client.model_api_urls[self.app.app_label][
             self.model_name]
         uri = os.path.join(path, str(data['id']))
-        return get_model_obj(self, uri=uri, data=data)
+        return ModelObj.with_properties(self, uri=uri, data=data)
 
     def _get(self, uri):
         """Gets a model object given it's primary key; Makes a 'GET' method
@@ -407,7 +407,7 @@ class ModelAPI(object):
             self.model_name]
         uri = os.path.join(path, str(pk))
         data = self._get(uri)
-        return get_model_obj(self, uri, data=data)
+        return ModelObj.with_properties(self, uri, data=data)
 
     def _update(self, uri, obj_data, patch=True):
         """Updates a model object given it's primary key and new object data;
@@ -478,7 +478,7 @@ def _get_f(field, properties):
                 return getattr(cls, "_%s" % field)
             app_label, model_name, id = field_val.split('/')[3:]
             model = cls.model_api.app.client.app(app_label).model(model_name)
-            related_obj = get_model_obj(
+            related_obj = ModelObj(
                 model,
                 field_val
             )
