@@ -166,6 +166,9 @@ class AppAPI(object):
         """
         return ModelAPI(self, model_name)
 
+    def __str__(self):
+        return "AppAPI: {}".format(self.app_label)
+
 
 class ModelAPI(object):
 
@@ -274,6 +277,7 @@ class ModelAPI(object):
                   'ordering': order, 'page': page, 'page_size': page_size}
 
         with self.app.client.request('GET', url, params=params) as response:
+            print(response.url)
             pages_left = int(response.headers['page_count']) - page
 
             df = pandas.concat(
@@ -469,6 +473,9 @@ class ModelAPI(object):
                  "delete not successful. Status code {}; {}".format(
                      response.status_code, response.content)})
 
+    def __str__(self):
+        return "ModelAPI: {}.{}".format(self.app.app_label, self.model_name)
+
 
 def _get_f(field, properties):
     """Dynamically builds a getter method using a string represnting the name of
@@ -630,3 +637,6 @@ class ModelObj:
 
         """
         self.model_api._delete(self.uri)
+
+    def __str__(self):
+        return "ModelObj: {}".format(self.uri)
