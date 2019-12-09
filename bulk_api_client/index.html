@@ -190,6 +190,9 @@ class AppAPI(object):
         &#34;&#34;&#34;
         return ModelAPI(self, model_name)
 
+    def __str__(self):
+        return &#34;AppAPI: {}&#34;.format(self.app_label)
+
 
 class ModelAPI(object):
 
@@ -493,6 +496,9 @@ class ModelAPI(object):
                  &#34;delete not successful. Status code {}; {}&#34;.format(
                      response.status_code, response.content)})
 
+    def __str__(self):
+        return &#34;ModelAPI: {}.{}&#34;.format(self.app.app_label, self.model_name)
+
 
 def _get_f(field, properties):
     &#34;&#34;&#34;Dynamically builds a getter method using a string represnting the name of
@@ -653,7 +659,10 @@ class ModelObj:
         Returns:
 
         &#34;&#34;&#34;
-        self.model_api._delete(self.uri)</code></pre>
+        self.model_api._delete(self.uri)
+
+    def __str__(self):
+        return &#34;ModelObj: {}&#34;.format(self.uri)</code></pre>
 </details>
 </section>
 <section>
@@ -748,7 +757,10 @@ Importer, the response cached in app_api_urls dictionary.</p>
             ModelAPI obj
 
         &#34;&#34;&#34;
-        return ModelAPI(self, model_name)</code></pre>
+        return ModelAPI(self, model_name)
+
+    def __str__(self):
+        return &#34;AppAPI: {}&#34;.format(self.app_label)</code></pre>
 </details>
 <h3>Methods</h3>
 <dl>
@@ -1345,7 +1357,10 @@ dictionary.</p>
             raise BulkAPIError(
                 {&#39;model_api&#39;:
                  &#34;delete not successful. Status code {}; {}&#34;.format(
-                     response.status_code, response.content)})</code></pre>
+                     response.status_code, response.content)})
+
+    def __str__(self):
+        return &#34;ModelAPI: {}.{}&#34;.format(self.app.app_label, self.model_name)</code></pre>
 </details>
 <h3>Methods</h3>
 <dl>
@@ -1639,7 +1654,10 @@ with_properties class method funnction to get properties</p>
         Returns:
 
         &#34;&#34;&#34;
-        self.model_api._delete(self.uri)</code></pre>
+        self.model_api._delete(self.uri)
+
+    def __str__(self):
+        return &#34;ModelObj: {}&#34;.format(self.uri)</code></pre>
 </details>
 <h3>Static methods</h3>
 <dl>
