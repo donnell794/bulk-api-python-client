@@ -277,7 +277,6 @@ class ModelAPI(object):
                   'ordering': order, 'page': page, 'page_size': page_size}
 
         with self.app.client.request('GET', url, params=params) as response:
-            print(response.url)
             pages_left = int(response.headers['page_count']) - page
 
             df = pandas.concat(
