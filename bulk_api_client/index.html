@@ -48,6 +48,10 @@ class Client(object):
     model_api_urls = {}
     &#34;&#34;&#34;Dict of Bulk Importer model urls. Updated with the initialization of a
     ModelAPI object&#34;&#34;&#34;
+    app_api_cache = {}
+    &#34;&#34;&#34;
+    Dict of AppAPI objects, created via app(), key of app_label
+    &#34;&#34;&#34;
 
     def __init__(self,
                  token,
@@ -129,7 +133,9 @@ class Client(object):
             AppAPI obj
 
         &#34;&#34;&#34;
-        return AppAPI(self, app_label)</code></pre>
+        if app_label not in self.app_api_cache:
+            self.app_api_cache[app_label] = AppAPI(self, app_label)
+        return self.app_api_cache[app_label]</code></pre>
 </details>
 </section>
 <section>
@@ -181,6 +187,10 @@ Requies a user token with access to data-warehouse</p>
     model_api_urls = {}
     &#34;&#34;&#34;Dict of Bulk Importer model urls. Updated with the initialization of a
     ModelAPI object&#34;&#34;&#34;
+    app_api_cache = {}
+    &#34;&#34;&#34;
+    Dict of AppAPI objects, created via app(), key of app_label
+    &#34;&#34;&#34;
 
     def __init__(self,
                  token,
@@ -262,10 +272,16 @@ Requies a user token with access to data-warehouse</p>
             AppAPI obj
 
         &#34;&#34;&#34;
-        return AppAPI(self, app_label)</code></pre>
+        if app_label not in self.app_api_cache:
+            self.app_api_cache[app_label] = AppAPI(self, app_label)
+        return self.app_api_cache[app_label]</code></pre>
 </details>
 <h3>Class variables</h3>
 <dl>
+<dt id="bulk_api_client.Client.app_api_cache"><code class="name">var <span class="ident">app_api_cache</span></code></dt>
+<dd>
+<section class="desc"><p>Dict of AppAPI objects, created via app(), key of app_label</p></section>
+</dd>
 <dt id="bulk_api_client.Client.app_api_urls"><code class="name">var <span class="ident">app_api_urls</span></code></dt>
 <dd>
 <section class="desc"><p>Dict of Bulk Importer app urls. Updated with the initialization of a
@@ -306,7 +322,9 @@ ModelAPI object</p></section>
         AppAPI obj
 
     &#34;&#34;&#34;
-    return AppAPI(self, app_label)</code></pre>
+    if app_label not in self.app_api_cache:
+        self.app_api_cache[app_label] = AppAPI(self, app_label)
+    return self.app_api_cache[app_label]</code></pre>
 </details>
 </dd>
 <dt id="bulk_api_client.Client.clear_cache"><code class="name flex">
@@ -402,8 +420,9 @@ python library</p>
 <ul>
 <li>
 <h4><code><a title="bulk_api_client.Client" href="#bulk_api_client.Client">Client</a></code></h4>
-<ul class="">
+<ul class="two-column">
 <li><code><a title="bulk_api_client.Client.app" href="#bulk_api_client.Client.app">app</a></code></li>
+<li><code><a title="bulk_api_client.Client.app_api_cache" href="#bulk_api_client.Client.app_api_cache">app_api_cache</a></code></li>
 <li><code><a title="bulk_api_client.Client.app_api_urls" href="#bulk_api_client.Client.app_api_urls">app_api_urls</a></code></li>
 <li><code><a title="bulk_api_client.Client.clear_cache" href="#bulk_api_client.Client.clear_cache">clear_cache</a></code></li>
 <li><code><a title="bulk_api_client.Client.model_api_urls" href="#bulk_api_client.Client.model_api_urls">model_api_urls</a></code></li>
