@@ -293,7 +293,7 @@ def test_model_api_private_query(model_api, filter, fields):
     test_page_size = 1
 
     params = {
-        'fields': ['id', 'text'],
+        'fields': '- id\n- text\n',
         'filter': "key: value\n",
         'ordering': test_order,
         'page': test_page,

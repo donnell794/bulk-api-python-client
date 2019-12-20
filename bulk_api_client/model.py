@@ -125,6 +125,7 @@ class ModelAPI(object):
                 fields = yaml.safe_load(fields)
             if not isinstance(fields, list):
                 raise field_error
+            fields = yaml.safe_dump(fields)
         if filter is not None:
             # If filter is a string, validate it is correct YAML for a dict
             if isinstance(filter, str):
