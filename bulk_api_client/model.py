@@ -4,7 +4,7 @@ import yaml
 import pandas
 import requests_cache
 
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urljoin
 from io import BytesIO
 
 from bulk_api_client.exceptions import BulkAPIError
@@ -374,7 +374,12 @@ def _get_f(field, properties):
     def get_f(cls):
         field_val = cls.data.get(field)
         if properties[field].get("format") == "uri":
-            if hasattr(cls, "_%s" % field):
+            if "api_download" in field_val:
+                response = cls.model_api.app.client.request(
+                    "GET", field_val, {}
+                )
+                return BytesIO(response.content)
+            elif hasattr(cls, "_%s" % field):
                 return getattr(cls, "_%s" % field)
             path = field_val.replace(cls.model_api.app.client.api_url, "")
             app_label, model_name, _id = path.split("/")

@@ -3,7 +3,7 @@ import pytest
 import string
 import random
 import json
-from io import BytesIO
+from io import BytesIO, IOBase
 from unittest import mock
 from pandas import DataFrame, read_csv
 from urllib.parse import urljoin
@@ -14,7 +14,7 @@ from bulk_api_client.model import ModelAPI, ModelObj
 from bulk_api_client.exceptions import BulkAPIError
 
 
-BASE_URL = "http://test.org/api/"
+BASE_URL = "http://test.com/api/"
 
 
 def random_string(stringLength=10):
@@ -919,3 +919,49 @@ def test_model_api_str_method(model_api):
 
 def test_model_obj_str_method(model_obj):
     assert str(model_obj) == "ModelObj: {}".format(model_obj.uri)
+
+
+def test_model_obj_file_property(app_api):
+    """Test ModelObj foreign key property, where a get should return a ModelObj
+    of the related model and a set should update the property as well as the uri
+    reference
+    """
+    model_name = random_string().lower()
+    model = ".".join([app_api.app_label, model_name])
+
+    model_properties = {
+        "id": {"title": "ID", "type": "integer", "readOnly": True},
+        "text": {"title": "Text", "type": "string", "minLength": 1},
+        "data_file": {
+            "title": "Data File",
+            "type": "string",
+            "readOnly": True,
+            "format": "uri",
+        },
+    }
+    uri = urljoin(BASE_URL, "{}/{}/{}".format(app_api.app_label, model_name, 1))
+    data_file_uri = urljoin(
+        BASE_URL,
+        "{}/{}/{}".format(app_api.app_label, "api_download", "test.txt"),
+    )
+    data = {
+        "id": 1,
+        "text": "model_text",
+        "data_file": data_file_uri,
+    }
+    app_api.client.definitions.pop("bulk_importer.examplefortesting")
+    app_api.client.definitions[model] = {"properties": model_properties}
+    response_data = {
+        model_name: urljoin(app_api.client.api_url, model_name),
+    }
+    response = Response()
+    response._content = json.dumps(response_data)
+    response.status_code = 200
+
+    with mock.patch.object(Client, "request", return_value=response):
+        model_api = ModelAPI(app_api, model_name)
+    model_obj = ModelObj.with_properties(model_api, uri, data)
+    response._content = b"abc123"
+    with mock.patch.object(Client, "request", return_value=response):
+        data_file = model_obj.data_file
+    assert isinstance(data_file, IOBase)
