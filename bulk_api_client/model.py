@@ -321,12 +321,20 @@ class ModelAPI(object):
 
         url = urljoin(self.app.client.api_url, uri)
         data = json.dumps(obj_data)
+        files = {}
+        for field, val in obj_data.items():
+            if not isinstance(val, str):
+                continue
+            if os.path.exists(val):
+                files[field] = open(val, "rb")
+        obj_data = {k: v for k, v in obj_data.items() if k not in files}
         kwargs = {
             "data": data,
             "headers": {
                 "Content-Type": "application/json",
                 "Accept": "application/json",
             },
+            "files": files,
         }
         method = "PATCH"
         if not patch:

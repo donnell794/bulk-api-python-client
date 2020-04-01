@@ -121,6 +121,34 @@ def model_api(app_api):
 
 
 @pytest.fixture
+def model_api_file(app_api):
+    model_name = random_string().lower()
+    model = ".".join([app_api.app_label, model_name])
+
+    model_properties = {
+        "id": {"title": "ID", "type": "integer", "readOnly": True},
+        "text": {"title": "Text", "type": "string", "minLength": 1},
+        "data_file": {
+            "title": "Data File",
+            "type": "string",
+            "readOnly": True,
+            "format": "uri",
+        },
+    }
+    app_api.client.definitions[model] = {"properties": model_properties}
+    response_data = {
+        model_name: urljoin(app_api.client.api_url, model_name),
+    }
+    response = Response()
+    response._content = json.dumps(response_data)
+    response.status_code = 200
+
+    with mock.patch.object(Client, "request", return_value=response):
+        model_api = ModelAPI(app_api, model_name)
+    return model_api
+
+
+@pytest.fixture
 def model_obj(model_api):
     uri = random_string()
     options = {
@@ -133,4 +161,31 @@ def model_obj(model_api):
     )
     with mock.patch.object(ModelAPI, "_get", return_value={"id": 1}):
         model_obj = ModelObj(model_api, uri, data)
+    return model_obj
+
+
+@pytest.fixture
+def model_obj_file(model_api_file, tmpdir):
+    outfile = tmpdir.mkdir("template").join("text.txt")
+    outfile_path = str(outfile)
+    with open(outfile_path, "w+") as f:
+        f.write("abc123")
+    obj_data = {
+        "text": "model_text",
+        "data_file": outfile_path,
+    }
+    data_file_uri = urljoin(
+        "http://test.org/api/",
+        "{}/{}/{}".format(app_api.app_label, "api_download", "test.txt"),
+    )
+    data = {
+        "id": 1,
+        "text": "model_text",
+        "data_file": data_file_uri,
+    }
+    response = Response()
+    response._content = json.dumps(data)
+    response.status_code = 200
+    with mock.patch.object(Client, "request", return_value=response):
+        model_obj = model_api.create(obj_data)
     return model_obj

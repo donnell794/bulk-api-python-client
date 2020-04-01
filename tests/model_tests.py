@@ -443,6 +443,8 @@ def test_model_api_create_file(app_api, tmpdir):
     with mock.patch.object(Client, "request", return_value=response) as fn:
         obj = model_api.create(obj_data)
         assert fn.called
+        "POST" in fn.call_args[0]
+        "files" in fn.call_args[1]
     assert isinstance(obj, ModelObj)
     assert obj.data == data
 
@@ -572,7 +574,7 @@ def test_model_api_update(model_api):
     correct parameters"""
 
     path = model_api.app.client.app_api_urls[model_api.app.app_label]
-    uri = uri = "/bulk/api/bulk_importer/examplefortesting/1016"
+    uri = "/bulk/api/bulk_importer/examplefortesting/1016"
     url = urljoin(path, os.path.join(model_api.model_name, uri))
     obj_data = {
         "text": "EYdVWVxempVwBpqMENtuYmGZJskLE",
@@ -586,6 +588,7 @@ def test_model_api_update(model_api):
             "Content-Type": "application/json",
             "Accept": "application/json",
         },
+        "files": {},
     }
     content = (
         b'[{"id": 1016, "created_at": "2019-11-01T19:17:50.415922Z",'
@@ -600,6 +603,33 @@ def test_model_api_update(model_api):
     with mock.patch.object(Client, "request", return_value=response) as fn:
         model_api._update(uri, obj_data, patch=False)
         fn.assert_called_with("PUT", url, params={}, **kwargs)
+
+
+def test_model_api_update_file(model_api_file, tmpdir):
+    """Test ModelAPI create method with POST request calls the private create
+    method correct parameters, and that the data returned is consistent
+    """
+    outfile = tmpdir.mkdir("model").join("updated_text.txt")
+    outfile_path = str(outfile)
+    with open(outfile_path, "w+") as f:
+        f.write("abc123")
+    uri = "/bulk/api/bulk_importer/examplefortesting/1016"
+    obj_data = {
+        "text": "model_text",
+        "data_file": outfile_path,
+    }
+    content = (
+        b'[{"id": 1, "text": "model_text",'
+        b'"data_file": "http://test.org/api/xazqnnvwzs/api_download/test.txt"}]'
+    )
+    response = Response()
+    response.status_code = 200
+    response._content = content
+    with mock.patch.object(Client, "request", return_value=response) as fn:
+        model_api_file._update(uri, obj_data)
+        assert fn.called
+        "PUT" in fn.call_args[0]
+        "files" in fn.call_args[1]
 
 
 def test_model_api_partial_update(model_api):
@@ -621,6 +651,7 @@ def test_model_api_partial_update(model_api):
             "Content-Type": "application/json",
             "Accept": "application/json",
         },
+        "files": {},
     }
     content = (
         b'[{"id": 1016, "created_at": "2019-11-01T19:17:50.415922Z",'
@@ -635,6 +666,33 @@ def test_model_api_partial_update(model_api):
     with mock.patch.object(Client, "request", return_value=response) as fn:
         model_api._update(uri, obj_data)
         fn.assert_called_with("PATCH", url, params={}, **kwargs)
+
+
+def test_model_api_partial_update_file(model_api_file, tmpdir):
+    """Test ModelAPI create method with POST request calls the private create
+    method correct parameters, and that the data returned is consistent
+    """
+    outfile = tmpdir.mkdir("model").join("updated_text.txt")
+    outfile_path = str(outfile)
+    with open(outfile_path, "w+") as f:
+        f.write("abc123")
+    uri = "/bulk/api/bulk_importer/examplefortesting/1016"
+    obj_data = {
+        "text": "model_text",
+        "data_file": outfile_path,
+    }
+    content = (
+        b'[{"id": 1, "text": "model_text",'
+        b'"data_file": "http://test.org/api/xazqnnvwzs/api_download/test.txt"}]'
+    )
+    response = Response()
+    response.status_code = 200
+    response._content = content
+    with mock.patch.object(Client, "request", return_value=response) as fn:
+        model_api_file._update(uri, obj_data)
+        assert fn.called
+        "PATCH" in fn.call_args[0]
+        "files" in fn.call_args[1]
 
 
 def test_model_api_delete(model_api):
