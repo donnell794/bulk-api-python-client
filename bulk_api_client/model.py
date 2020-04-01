@@ -234,6 +234,12 @@ class ModelAPI(object):
             self.model_name
         ]
         url = urljoin(self.app.client.api_url, path)
+        files = {}
+        for field, val in obj_data.items():
+            if os.path.exists(val):
+                files[field] = open(val, "rb")
+        obj_data = {k: v for k, v in obj_data.items() if k not in files}
+
         data = json.dumps(obj_data, cls=ModelObjJSONEncoder)
         kwargs = {
             "data": data,
@@ -241,8 +247,10 @@ class ModelAPI(object):
                 "Content-Type": "application/json",
                 "Accept": "application/json",
             },
+            "files": files,
         }
         response = self.app.client.request("POST", url, params={}, **kwargs)
+
         return json.loads(response.content)
 
     def create(self, obj_data):

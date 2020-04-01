@@ -14,7 +14,7 @@ from bulk_api_client.model import ModelAPI, ModelObj
 from bulk_api_client.exceptions import BulkAPIError
 
 
-BASE_URL = "http://test.com/api/"
+BASE_URL = "http://test.org/api/"
 
 
 def random_string(stringLength=10):
@@ -388,6 +388,61 @@ def test_model_api_create(model_api):
     with mock.patch.object(ModelAPI, "_create", return_value=data) as fn:
         obj = model_api.create(obj_data)
         fn.assert_called_with(obj_data)
+    assert isinstance(obj, ModelObj)
+    assert obj.data == data
+
+
+def test_model_api_create_file(app_api, tmpdir):
+    """Test ModelAPI create method with POST request calls the private create
+    method correct parameters, and that the data returned is consistent
+    """
+    outfile = tmpdir.mkdir("template").join("text.txt")
+    outfile_path = str(outfile)
+    with open(outfile_path, "w+") as f:
+        f.write("abc123")
+    model_name = random_string().lower()
+    model = ".".join([app_api.app_label, model_name])
+
+    model_properties = {
+        "id": {"title": "ID", "type": "integer", "readOnly": True},
+        "text": {"title": "Text", "type": "string", "minLength": 1},
+        "data_file": {
+            "title": "Data File",
+            "type": "string",
+            "readOnly": True,
+            "format": "uri",
+        },
+    }
+    data_file_uri = urljoin(
+        BASE_URL,
+        "{}/{}/{}".format(app_api.app_label, "api_download", "test.txt"),
+    )
+    data = {
+        "id": 1,
+        "text": "model_text",
+        "data_file": data_file_uri,
+    }
+    app_api.client.definitions.pop("bulk_importer.examplefortesting")
+    app_api.client.definitions[model] = {"properties": model_properties}
+    response_data = {
+        model_name: urljoin(app_api.client.api_url, model_name),
+    }
+    response = Response()
+    response._content = json.dumps(response_data)
+    response.status_code = 200
+
+    with mock.patch.object(Client, "request", return_value=response):
+        model_api = ModelAPI(app_api, model_name)
+    obj_data = {
+        "text": "model_text",
+        "data_file": outfile_path,
+    }
+    response = Response()
+    response._content = json.dumps(data)
+    response.status_code = 200
+    with mock.patch.object(Client, "request", return_value=response) as fn:
+        obj = model_api.create(obj_data)
+        assert fn.called
     assert isinstance(obj, ModelObj)
     assert obj.data == data
 
