@@ -357,6 +357,7 @@ def test_model_api_private_create(model_api):
             "Content-Type": "application/json",
             "Accept": "application/json",
         },
+        "files": {},
     }
     response = Response()
     response.status_code = 200
@@ -422,7 +423,6 @@ def test_model_api_create_file(app_api, tmpdir):
         "text": "model_text",
         "data_file": data_file_uri,
     }
-    app_api.client.definitions.pop("bulk_importer.examplefortesting")
     app_api.client.definitions[model] = {"properties": model_properties}
     response_data = {
         model_name: urljoin(app_api.client.api_url, model_name),
@@ -812,7 +812,6 @@ def test_model_obj_property_duplication_regression(app_api):
     }
     model_1 = ".".join([app_api.app_label, model_name_1])
     model_2 = ".".join([app_api.app_label, model_name_2])
-    app_api.client.definitions.pop("bulk_importer.examplefortesting")
     model_1_properties = {
         "id": {"title": "ID", "type": "integer", "readOnly": True},
         "text": {"title": "Text", "type": "string", "minLength": 1},
@@ -921,7 +920,6 @@ def test_model_obj_fk_property(app_api):
         "id": 333,
         "integer": 5,
     }
-    app_api.client.definitions.pop("bulk_importer.examplefortesting")
     app_api.client.definitions[model] = {"properties": model_properties}
     app_api.client.definitions[related_model] = {
         "properties": related_model_properties
@@ -1004,7 +1002,6 @@ def test_model_obj_file_property(app_api):
         "text": "model_text",
         "data_file": data_file_uri,
     }
-    app_api.client.definitions.pop("bulk_importer.examplefortesting")
     app_api.client.definitions[model] = {"properties": model_properties}
     response_data = {
         model_name: urljoin(app_api.client.api_url, model_name),

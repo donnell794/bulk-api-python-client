@@ -64,7 +64,7 @@ def client():
 
 @pytest.fixture
 def app_api(client):
-    app_label = "bulk_importer"
+    app_label = random_string().lower()
     data = {
         app_label: urljoin(client.api_url, "{}/".format(app_label)),
     }
@@ -82,11 +82,11 @@ def model_api(app_api):
     model_name = random_string().lower()
     data = {
         model_name: urljoin(
-            app_api.client.api_url, "bulk_importer/{}/".format(model_name)
+            app_api.client.api_url,
+            "{}/{}/".format(app_api.app_label, model_name),
         ),
     }
     model = ".".join([app_api.app_label, model_name])
-    app_api.client.definitions.pop("bulk_importer.examplefortesting")
     properties = {
         "id": {"title": "ID", "type": "integer", "readOnly": True},
         "name": {
