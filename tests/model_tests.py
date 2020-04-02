@@ -581,13 +581,9 @@ def test_model_api_update(model_api):
         "date_time": "2019-11-01T19:17:50.416090Z",
         "integer": 5,
     }
-    data = json.dumps(obj_data)
     kwargs = {
-        "data": data,
-        "headers": {
-            "Content-Type": "application/json",
-            "Accept": "application/json",
-        },
+        "data": obj_data,
+        "headers": {"Accept": "application/json"},
         "files": {},
     }
     content = (
@@ -644,13 +640,9 @@ def test_model_api_partial_update(model_api):
         "date_time": "2019-11-01T19:17:50.416090Z",
         "integer": 5,
     }
-    data = json.dumps(obj_data)
     kwargs = {
-        "data": data,
-        "headers": {
-            "Content-Type": "application/json",
-            "Accept": "application/json",
-        },
+        "data": obj_data,
+        "headers": {"Accept": "application/json"},
         "files": {},
     }
     content = (
