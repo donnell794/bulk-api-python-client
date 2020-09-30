@@ -54,15 +54,15 @@ class Client(object):
             ),
             expire_after=expiration_time,
         )
+        self.log = log
+        if self.log:
+            logging.basicConfig(level=logging.DEBUG)
         json_res = self.request(
             method="GET", url=urljoin(self.api_url, "swagger.json"), params={},
         )
         self.swagger_data = json.loads(json_res.content)
         self.definitions = self.swagger_data["definitions"]
         self.paths = self.swagger_data["paths"]
-        self.log = log
-        if self.log:
-            logging.basicConfig(level=logging.DEBUG)
 
     @property
     def log(self):
