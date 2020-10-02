@@ -28,7 +28,10 @@ class Client(object):
     """
 
     def __init__(
-        self, token, api_url=None, expiration_time=None,
+        self,
+        token,
+        api_url=None,
+        expiration_time=None,
     ):
         """API Client object for bulk_importer to handle app and model requests.
         Requies a user token with access to data-warehouse
@@ -56,7 +59,9 @@ class Client(object):
             expire_after=expiration_time,
         )
         json_res = self.request(
-            method="GET", url=urljoin(self.api_url, "swagger.json"), params={},
+            method="GET",
+            url=urljoin(self.api_url, "swagger.json"),
+            params={},
         )
         self.swagger_data = json.loads(json_res.content)
         self.definitions = self.swagger_data["definitions"]
@@ -93,10 +98,7 @@ class Client(object):
         )
 
         if response.status_code not in [200, 201, 204]:
-            try:
-                raise BulkAPIError(json.loads(response.content))
-            except json.JSONDecodeError:
-                raise BulkAPIError(response.content)
+            raise BulkAPIError(response.content)
         return response
 
     def clear_cache(self):
