@@ -75,7 +75,10 @@ def test_model_api_query(model_api):
         read_csv(BytesIO(b"id,text\n2,text2")),
     ]
 
-    with mock.patch.object(ModelAPI, "_query",) as fn:
+    with mock.patch.object(
+        ModelAPI,
+        "_query",
+    ) as fn:
         fn.side_effect = [(dataframes[0], 1), (dataframes[1], 0)]
         test_model_data_frame = model_api.query(
             fields=test_fields,
@@ -140,8 +143,7 @@ def test_model_api_private_query(model_api, filter, fields):
 
 
 def test_model_api_query_request_null_params(model_api):
-    """Test ModelAPI query_request method with null parameters works as intented
-    """
+    """Test ModelAPI query_request method with null parameters works as intented"""
     path = model_api.app.client.app_api_urls[model_api.app.app_label]
     url = urljoin(path, os.path.join(model_api.model_name, "query"))
 
