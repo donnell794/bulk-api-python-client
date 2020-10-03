@@ -11,9 +11,7 @@ class AppAPI(object):
     """
 
     def __init__(
-        self,
-        client,
-        app_label,
+        self, client, app_label,
     ):
         """App object. Given a app label, this object makes a request — using
         the Client class — to the Bulk Importer API. If given a app in Bulk

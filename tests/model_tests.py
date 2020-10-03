@@ -75,10 +75,7 @@ def test_model_api_query(model_api):
         read_csv(BytesIO(b"id,text\n2,text2")),
     ]
 
-    with mock.patch.object(
-        ModelAPI,
-        "_query",
-    ) as fn:
+    with mock.patch.object(ModelAPI, "_query",) as fn:
         fn.side_effect = [(dataframes[0], 1), (dataframes[1], 0)]
         test_model_data_frame = model_api.query(
             fields=test_fields,
