@@ -12,14 +12,18 @@ Since this is a private repo, you will have to install using SSH
 
 To install the project or upgrade it when bugfixes/features are added:
 
-    pip install -U git+ssh://git@github.com/pivotbio/bulk-api-python-client.git
+```
+pip install -U git+ssh://git@github.com/pivotbio/bulk-api-python-client.git
+```
 
 ## Usage
 
-    from bulk_api_client import Client
+```
+from bulk_api_client import Client
 
-    client = Client(token, api_url='https://data-warehouse.pivot/bulk/api/', expiration_time=7200)
-    client.app('app_label').model('model_name')
+client = Client(token, api_url='https://data-warehouse.pivot/bulk/api/', expiration_time=7200)
+client.app('app_label').model('model_name')
+```
 
 ## ModelAPI
 
@@ -27,19 +31,25 @@ To install the project or upgrade it when bugfixes/features are added:
 
 List all objects on a model. Only 100 objects can be returned at a time. Use the page option to query for different pages
 
-    .list(page=1)
+```
+.list(page=1)
+```
 
 Returns a list of ModelObj objects
 
 List can also take a filter and an order similar to the query function. This is useful because rather than only getting that functionality on a query that returns a dataframe, you can now filter and order for ModelObjs
 
-    .list(page=1, filter={'or': [{'field_name1': 'value1'}, {'field_name2': 'value2'}]}, order='field', fields=['field1','field2','field3'])
+```
+.list(page=1, filter={'or': [{'field_name1': 'value1'}, {'field_name2': 'value2'}]}, order='field', fields=['field1','field2','field3'])
+```
 
 ### Get
 
 Get a model object using it's primary key
 
-    .get(pk=1)
+```
+.get(pk=1)
+```
 
 Returns a ModelObj object
 
@@ -47,7 +57,9 @@ Returns a ModelObj object
 
 Create an object on a model using a dictionary of data on the object
 
-    .create(obj_data={})
+```
+.create(obj_data={})
+```
 
 Returns a ModelObj object
 
@@ -55,12 +67,14 @@ Returns a ModelObj object
 
 ModelAPI supports create/update of an instance with a file as a field. This file field accepts an open file/file buffer. This file is stored in the database and retrievable.
 
-    with open(file_path, "rb") as file:
-         obj_data = {
-             "text": "model_text",
-             "data_file": file,
-         }
-         obj = model_api.create(obj_data)
+```
+with open(file_path, "rb") as file:
+     obj_data = {
+         "text": "model_text",
+         "data_file": file,
+     }
+     obj = model_api.create(obj_data)
+```
 
 With a ModelObj, a file field on the instance downloads the file from the database to be readable by the user. This will be an open python file object ('rb' mode).
 
@@ -68,7 +82,9 @@ This file object cannot be overwritten or changed with a simple set action (i.e.
 
 ### Query
 
-    .query(filter=...,order=...,page=,page_size=,fields=[...],skip_cache=bool)
+```
+.query(filter=...,order=...,page=,page_size=,fields=[...],skip_cache=bool)
+```
 
 Returns a Pandas dataframe object
 
@@ -83,19 +99,27 @@ Returns a Pandas dataframe object
 
 #### Example Queries
 
-    query(filter={'or': [{'field_name1': 'value1'}, {'field_name2': 'value2'}]}, order='field', fields=['field1','field2','field3'])
+```
+query(filter={'or': [{'field_name1': 'value1'}, {'field_name2': 'value2'}]}, order='field', fields=['field1','field2','field3'])
+```
 
 joins (on foreign key models use double underscore)
 
-    query(filter={'field__field_on_related_model': 'value'})
+```
+query(filter={'field__field_on_related_model': 'value'})
+```
 
 field starts with
 
-    query(filter={'id__startswith': 110})
+```
+query(filter={'id__startswith': 110})
+```
 
 Complex filter query
 
-    query(filter={'or': [{'question__startswith': 'Who'}, {'and': [{'question__startswith': 'What'}, {'integer__gte': 1'}]}])
+```
+query(filter={'or': [{'question__startswith': 'Who'}, {'and': [{'question__startswith': 'What'}, {'integer__gte': 1'}]}])
+```
 
 ### Fields
 
@@ -103,16 +127,20 @@ Queries now support using YAML for for fields as well as renaming field column o
 
 Example Fields with Renaming
 
-    [field1, {field2: field2_new_name}]
+```
+[field1, {field2: field2_new_name}]
+```
 
 Example Field Yaml with Renamed Fields
 
-    ---
-     - field1
-     - field2
-     - field3__related: new_name
-     - field4
-     - field5: field5_new_name
+```
+---
+ - field1
+ - field2
+ - field3__related: new_name
+ - field4
+ - field5: field5_new_name
+```
 
 ### Filter
 
@@ -120,7 +148,8 @@ Queries now support using YAML for for filters
 
 Example Field Yaml
 
-    ---
+```
+---
      and:
        field1__in:
          - 1
@@ -129,7 +158,8 @@ Example Field Yaml
        field2: "text"
        or:
          fields3__gte: 1
-         fields4: "asdf"
+         fields4: "4field"
+```
 
 ## ModelObj
 
@@ -139,23 +169,29 @@ Object returned by the create/get/list functions of the ModelAPI
 
 Update an existing object with a dictionary of data
 
-    .update({...})
+```
+.update({...})
+```
 
 ### Delete
 
 Removes the model instance
 
-    .delete()
+```
+.delete()
+```
 
 Useful Link
 
--   [Django QuerySet Field Lookups](https://docs.djangoproject.com/en/2.1/ref/models/querysets/#field-lookups)
+- [Django QuerySet Field Lookups](https://docs.djangoproject.com/en/2.1/ref/models/querysets/#field-lookups)
 
 ## Running the tests
 
 For testing, we use pytest and coverage. In your terminal/DOS, navigate to the folder this project is stored and run the command
 
-    pytest -{flag} tests/
+```
+pytest -{flag} tests/
+```
 
 ### Useful flags
 
@@ -178,26 +214,36 @@ Tests will automatically check for code style, which should adhere to Pep8
 
 Clone the repository
 
-    git clone git@github.com:pivotbio/bulk-api-python-client.git
+```
+git clone git@github.com:pivotbio/bulk-api-python-client.git
+```
 
 Install the requirements
 
-    pip install -e .[dev]
+```
+pip install -e .[dev]
+```
 
 Using git, create a branch of the repo. Develop using an IDE of your choice
 
-    git branch -b {your_branch}
+```
+git branch -b {your_branch}
+```
 
 Once you're read to add your changes, add them to your branch and commit
 
-    git add -p
-    git commit
+```
+git add -p
+git commit
+```
 
 Push your changes and make a pull request on GitHub
 
-    git push
+```
+git push
+```
 
 ## Authors
 
--   **Mikela Clemmons** - [GitHub Profile](https://github.com/glassresistor)
--   **Donnell Muse** - [GitHub Profile](https://github.com/donnell794)
+- **Mikela Clemmons** - [GitHub Profile](https://github.com/glassresistor)
+- **Donnell Muse** - [GitHub Profile](https://github.com/donnell794)

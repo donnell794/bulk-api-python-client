@@ -82,7 +82,7 @@ class ModelAPI(object):
         filter=None,
         order=None,
         page_size=None,
-        skip_cache=False,
+        skip_cache=None,
     ):
         """Queries to create a Pandas DataFrame for given queryset. The default
         query may be obtained by calling the function, without passing
