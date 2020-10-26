@@ -144,7 +144,9 @@ class ModelAPI(object):
             # If fields is a string, validate it is correct YAML for a list
             if isinstance(fields, str):
                 fields = yaml.safe_load(fields)
-            if not isinstance(fields, list):
+            # if not isinstance(fields, list) and not isinstance(fields, dict):
+
+            if not any([isinstance(fields, x) for x in [list, dict]]):
                 raise field_error
             fields = yaml.safe_dump(fields)
         if filter is not None:
