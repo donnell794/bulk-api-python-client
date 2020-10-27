@@ -3,6 +3,8 @@ import json
 import yaml
 import pandas
 import requests_cache
+import yamlloader
+from collections import OrderedDict
 
 from urllib.parse import urljoin
 from io import BytesIO
@@ -76,6 +78,15 @@ class ModelAPI(object):
                 }
             )
 
+    def fields_dict_to_list(self, fields_dict):
+        fields_list = []
+        for k, v in fields_dict.items():
+            if any([isinstance(v, d) for d in [dict, OrderedDict]]):
+                fields_list.append({k: v})
+            else:
+                fields_list.append({k: {"alias": v}})
+        return fields_list
+
     def query(
         self,
         fields=None,
@@ -144,10 +155,12 @@ class ModelAPI(object):
             # If fields is a string, validate it is correct YAML for a list
             if isinstance(fields, str):
                 fields = yaml.safe_load(fields)
-            # if not isinstance(fields, list) and not isinstance(fields, dict):
-
-            if not any([isinstance(fields, x) for x in [list, dict]]):
+            if not any(
+                [isinstance(fields, x) for x in [list, dict, OrderedDict]]
+            ):
                 raise field_error
+            if any([isinstance(fields, x) for x in [OrderedDict, dict]]):
+                fields = self.fields_dict_to_list(fields)
             fields = yaml.safe_dump(fields)
         if filter is not None:
             # If filter is a string, validate it is correct YAML for a dict

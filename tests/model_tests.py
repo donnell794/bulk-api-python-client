@@ -137,10 +137,21 @@ def test_model_api_query_skip_cache(model_api):
     [
         ("key: value", "- id\n- text", "- id\n- text\n"),
         ({"key": "value"}, ["id", "text"], "- id\n- text\n"),
+        ({"key": "value"}, {"field": "name"}, "- field:\n    alias: name\n",),
         (
             {"key": "value"},
-            {"lookup": "expected_value"},
-            "lookup: expected_value\n",
+            {"field": {"alias": "name"}},
+            "- field:\n    alias: name\n",
+        ),
+        (
+            {"key": "value"},
+            OrderedDict({"field": "name"}),
+            "- field:\n    alias: name\n",
+        ),
+        (
+            {"key": "value"},
+            OrderedDict({"field": {"alias": "name"}}),
+            "- field:\n    alias: name\n",
         ),
     ],
 )
