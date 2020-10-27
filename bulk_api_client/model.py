@@ -79,6 +79,20 @@ class ModelAPI(object):
             )
 
     def fields_dict_to_list(self, fields_dict):
+        """
+        Creates a list of single dict items from a dict. Makes assumption that
+        a non-dict value is an alias. Does not have support for values more
+        complex than being a nested dict (to specify alias or distinct) or
+        single values (string)
+
+        Args:
+            fields_dict (dict): dict of fields columns (with alias and/or
+            distinct)
+
+        Returns:
+            list of single dicts
+
+        """
         fields_list = []
         for k, v in fields_dict.items():
             if any([isinstance(v, d) for d in [dict, OrderedDict]]):
