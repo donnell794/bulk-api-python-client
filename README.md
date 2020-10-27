@@ -141,6 +141,16 @@ Example Field Yaml with Renamed Fields
  - field5: field5_new_name
 ```
 
+Example Fields Dict with Renamed Fields
+
+```
+{field1: new_field1_name}
+
+or
+
+{field1: {'alias': new_field1_name}}
+```
+
 ### Filter
 
 Queries now support using YAML for for filters
