@@ -3,7 +3,6 @@ import json
 import yaml
 import pandas
 import requests_cache
-import yamlloader
 from collections import OrderedDict
 
 from urllib.parse import urljoin
