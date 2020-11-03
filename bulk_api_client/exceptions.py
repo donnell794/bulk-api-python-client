@@ -2,5 +2,5 @@ class BulkAPIError(Exception):
     pass
 
 
-class InvalidQObject(Exception):
+class InvalidQObject(TypeError):
     pass
