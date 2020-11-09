@@ -123,7 +123,7 @@ query(filter={'or': [{'question__startswith': 'Who'}, {'and': [{'question__start
 Filter query using Q object
 
 ```
-query(filter={Q(field1=data))
+query(filter=Q(field1=data))
 ```
 
 Complex filter query using Q object
