@@ -30,9 +30,11 @@ def test_env_client():
     os.environ["BULK_API_TOKEN"] = token
     url = "url"
     os.environ["BULK_API_URL"] = url
-    timeout = "100"
-    os.environ["BULK_API_TIMEOUT"] = timeout
+    expiration_time = "100"
+    os.environ["BULK_API_EXPIRATION_TIME"] = expiration_time
     with mock.patch.object(Client, "__init__", return_value=None) as fn:
         env_client = reimport_env_client()
-    fn.assert_called_with(token, api_url=url, timeout=int(timeout))
+    fn.assert_called_with(
+        token, api_url=url, expiration_time=int(expiration_time)
+    )
     assert isinstance(env_client, Client)
