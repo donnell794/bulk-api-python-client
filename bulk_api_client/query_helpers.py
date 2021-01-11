@@ -10,10 +10,12 @@ class Q:
 
     AND = "and"
     OR = "or"
+    NOT = "not"
     default = AND
 
-    def __init__(self, _conn=None, **kwargs):
+    def __init__(self, _conn=None, _negated=False, **kwargs):
         self._conn = _conn or self.default
+        self.negated = _negated
         self._children = list(kwargs.items())
 
     def _combine(self, object_on_right, conn):
@@ -43,16 +45,37 @@ class Q:
         elif not self._children:
             return object_on_right
 
-        q = Q(_conn=conn)
-        for operand in [self, object_on_right]:
-            if (conn == operand._conn and operand._children) or len(
-                operand._children
-            ) == 1:
-                q._children.extend(operand._children)
-            else:
-                q._children.append(operand)
-
+        q = type(self)()
+        q._conn = conn
+        q.add(self, conn)
+        q.add(object_on_right, conn)
         return q
+
+    def add(self, object_on_right, conn):
+        if self._conn == conn:
+            if (
+                object_on_right._children
+                and not self.negated
+                and (
+                    conn == object_on_right._conn
+                    or len(object_on_right._children) == 1
+                )
+            ):
+                self._children.extend(object_on_right._children)
+                return self
+            else:
+                self._children.append(object_on_right)
+                return object_on_right
+        else:
+            q = type(self)()
+            q._children = self._children
+            q._conn = self._conn
+            q.negated = self.negated
+
+            self._conn = conn
+            self._children = [q, object_on_right]
+
+            return object_on_right
 
     def __and__(self, object_on_right):
         return self._combine(object_on_right, self.AND)
@@ -66,6 +89,17 @@ class Q:
             and self._conn == object_on_right._conn
             and self._children == object_on_right._children
         )
+
+    def __invert__(self):
+        q = type(self)()
+        q.add(self, self.NOT)
+        q._negate()
+
+        return q
+
+    def _negate(self):
+        """Negate the sense of the root connector."""
+        self.negated = not self.negated
 
     def output_filter(self):
         """
