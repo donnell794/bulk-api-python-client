@@ -72,6 +72,7 @@ def test_q_obj_chain():
 def test_invert_Q():
     q = ~Q(field1=1)
     q2 = ~Q(field2=2, field3=3)
+
     assert q.output_filter() == {"not": [{"and": [{"field1": 1}]}]}
     assert q2.output_filter() == {
         "not": [{"and": [{"field2": 2}, {"field3": 3}]}]

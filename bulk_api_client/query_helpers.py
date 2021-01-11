@@ -93,6 +93,7 @@ class Q:
     def __invert__(self):
         q = type(self)()
         q.add(self, self.NOT)
+        q.remove_empty_child()
         q._negate()
 
         return q
@@ -100,6 +101,10 @@ class Q:
     def _negate(self):
         """Negate the sense of the root connector."""
         self.negated = not self.negated
+
+    def remove_empty_child(self):
+        """Remove empty child created on negation of Q object"""
+        self._children = [self._children[-1]]
 
     def output_filter(self):
         """
