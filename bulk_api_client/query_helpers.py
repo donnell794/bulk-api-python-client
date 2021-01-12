@@ -52,7 +52,26 @@ class Q:
         return q
 
     def add(self, object_on_right, conn):
+        """
+        Given matching connections of binary operators on self and conn, combine
+        or extend children of self or the object on the right. If the operators
+        do not match, create a new Q object from the conn parameter whose
+        children are self and object on the right.
+
+        Args:
+            self (Q obj)
+            object_on_right (Q obj)
+            conn: unary/binary operator
+
+        Returns:
+            Q obj
+
+        """
         if self._conn == conn:
+            # Add right object's children to self if they exist, if self has not
+            # been negated, if conn param and right object's connector match,
+            # and if right object has at least one child, else make right object
+            # a child of self
             if (
                 object_on_right._children
                 and not self.negated
@@ -91,6 +110,20 @@ class Q:
         )
 
     def __invert__(self):
+        """
+        Creates a fresh Q object with connection "not" and sets its children as
+        the self Q, whio is calling this method, using the add method. In dict
+        form, this evaluates to:
+
+        {"not": [{self_conn: [self_children]}]}
+
+        Args:
+            self (Q obj)
+
+        Returns:
+            Q obj
+
+        """
         q = type(self)()
         q.add(self, self.NOT)
         q.remove_empty_child()
@@ -99,7 +132,10 @@ class Q:
         return q
 
     def _negate(self):
-        """Negate the sense of the root connector."""
+        """
+        Flip the value of the bool property "negated," which aids the add method
+        with unary operation
+        """
         self.negated = not self.negated
 
     def remove_empty_child(self):
