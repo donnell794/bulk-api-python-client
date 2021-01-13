@@ -80,26 +80,22 @@ class ModelAPI(object):
 
     def fields_dict_to_list(self, fields_dict):
         """
-        Creates a list of single dict items from a dict. Makes assumption that
-        a non-dict value is an alias. Does not have support for values more
-        complex than being a nested dict (to specify alias or distinct) or
-        single values (string)
+        Creates a list of single dict items from a dict to meet query api
+        specification.
+
+        E.g. converts
+            {"field1": "field1_alias", "field2": "field2_alias"}
+        to
+            [{"field1": "field1_alias"}, {"field2": "field2_alias"}]
 
         Args:
-            fields_dict (dict): dict of fields columns (with alias and/or
-            distinct)
+            fields_dict (dict): dict of fields columns to desired aliases
 
         Returns:
             list of single dicts
 
         """
-        fields_list = []
-        for k, v in fields_dict.items():
-            if any([isinstance(v, d) for d in [dict, OrderedDict]]):
-                fields_list.append({k: v})
-            else:
-                fields_list.append({k: {"alias": v}})
-        return fields_list
+        return [{k: v} for k, v in fields_dict.items()]
 
     def query(
         self,

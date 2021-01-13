@@ -138,22 +138,8 @@ def test_model_api_query_skip_cache(model_api):
     [
         ("key: value", "- id\n- text", "- id\n- text\n"),
         ({"key": "value"}, ["id", "text"], "- id\n- text\n"),
-        ({"key": "value"}, {"field": "name"}, "- field:\n    alias: name\n",),
-        (
-            {"key": "value"},
-            {"field": {"alias": "name"}},
-            "- field:\n    alias: name\n",
-        ),
-        (
-            {"key": "value"},
-            OrderedDict({"field": "name"}),
-            "- field:\n    alias: name\n",
-        ),
-        (
-            {"key": "value"},
-            OrderedDict({"field": {"alias": "name"}}),
-            "- field:\n    alias: name\n",
-        ),
+        ({"key": "value"}, {"field": "name"}, "- field: name\n",),
+        ({"key": "value"}, OrderedDict({"field": "name"}), "- field: name\n",),
     ],
 )
 def test_model_api_private_query(model_api, filter, fields, expected_fields):
