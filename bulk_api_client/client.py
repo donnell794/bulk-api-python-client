@@ -16,6 +16,14 @@ CERT_PATH = os.path.join(
 )
 
 
+def is_json(d):
+    try:
+        json.loads(d)
+    except ValueError:
+        return False
+    return True
+
+
 class Client(object):
     def __init__(self, token, api_url=None, expiration_time=None, log=False):
         """API Client object for bulk_importer to handle app and model requests.
@@ -112,7 +120,18 @@ class Client(object):
         try:
             response.raise_for_status()
         except requests.exceptions.HTTPError:
-            raise BulkAPIError(response.content)
+            content = response.content
+
+            if is_json(content):
+                raise BulkAPIError(content)
+
+            raise BulkAPIError(
+                "{} Error raised — something went wrong.\nPlease send this "
+                "message to data-services+api-error@pivotbio.com, including "
+                "the link below:\n\n{}\nIf you are curious as the the nature of"
+                " the problem following the above link might provide some "
+                "help.".format(response.status_code, response.url)
+            )
         else:
             return response
 
