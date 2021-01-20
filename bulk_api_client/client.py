@@ -108,9 +108,13 @@ class Client(object):
             **kwargs,
         )
 
-        if response.status_code not in [200, 201, 204]:
+        # catch 4XX client error or 5XX server error response
+        try:
+            response.raise_for_status()
+        except requests.exceptions.HTTPError:
             raise BulkAPIError(response.content)
-        return response
+        else:
+            return response
 
     def clear_cache(self):
         """Empty requests cache"""
