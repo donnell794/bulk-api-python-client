@@ -552,8 +552,8 @@ class ModelObj:
         Args:
             model_api (obj): ModelAPI its related to
             uri (str): uri of the resource
-            path (str): uri to the resource collection, to obtain definitions
             data (dict): property which memoizes _data
+            path (str): uri to the resource collection, to obtain definitions
 
         Returns:
             ModelObjWithProperties obj
