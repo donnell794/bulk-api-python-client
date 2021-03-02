@@ -63,28 +63,8 @@ def client():
     Client.model_api_urls = {}
     Client.app_api_cache = {}
     json_data = {
-        "definitions": {
-            "bulk_importer.examplefortesting": {
-                "required": ["text", "date_time"],
-                "type": "object",
-                "properties": {
-                    "text": {"title": "Text", "type": "string", "minLength": 1},
-                },
-            },
-            "bulk_importer.relatedexamplefortesting": {
-                "required": ["text", "parent"],
-                "type": "object",
-                "properties": {
-                    "text": {"title": "Text", "type": "string", "minLength": 1},
-                    "parent": {
-                        "title": "Parent",
-                        "type": "string",
-                        "format": "uri",
-                    },
-                },
-            },
-        },
-        "paths": ["some_paths"],
+        "bulk_importer": "https://data-warehouse.pivot/bulk/api/bulk_importer/",
+        "uav": "https://data-warehouse.pivot/bulk/api/uav/",
     }
 
     data = json.dumps(json_data)
