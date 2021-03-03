@@ -5,10 +5,11 @@ from bulk_api_client.model import ModelAPI
 
 
 @pytest.mark.vcr()
-def test_models():
+def test_models(vcr_client):
     """
     Tests of models initialization in the models.py pseudo-package.
     """
+    vcr_client.clear_cache()
 
     with requests_cache.disabled():
         with pytest.setenv(BULK_API_TOKEN="token"):

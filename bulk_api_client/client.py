@@ -65,14 +65,14 @@ class Client(object):
             logging.basicConfig(level=logging.DEBUG)
         self.definitions = {}
 
-        self.apps = self._load_apps()
+        self.load_apps()
 
-    def _load_apps(self):
+    def load_apps(self):
         """
         Retrieves the top-level list of apps.
         """
         apps_res = self.request(method="GET", url=self.api_url, params={},)
-        return json.loads(apps_res.content)
+        self.apps = json.loads(apps_res.content)
 
     @property
     def log(self):

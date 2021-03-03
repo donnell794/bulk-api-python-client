@@ -465,7 +465,7 @@ def _get_f(field, properties):
 
     def get_f(cls):
         field_val = cls.data.get(field)
-        if properties[field].get("format") == "uri":
+        if properties[field].get("type") == "foreignkey":
             if "api_download" in field_val:
                 response = cls.model_api.app.client.request(
                     "GET", field_val, {}
@@ -498,9 +498,9 @@ def _set_f(field, properties):
     """
 
     def set_f(cls, val):
-        if properties[field].get("readOnly", False):
+        if properties[field].get("read_only", False):
             raise BulkAPIError({"ModelObj": "Cannot set a read only property"})
-        if properties[field].get("format") == "uri":
+        if properties[field].get("type") == "foreignkey":
             if not isinstance(val, ModelObj):
                 raise BulkAPIError(
                     {"ModelObj": "New related model must be a _ModelObj"}
@@ -569,6 +569,10 @@ class ModelObj:
 
         model_properties = ModelObj._get_model_properties(model_api)
         for field, _ in model_properties.items():
+            if field == "_meta":
+                # don't create a field named _meta;
+                # that's the django definitions
+                continue
             get_f = _get_f(field, model_properties)
             setattr(ModelObjWithProperties, "get_%s" % field, get_f)
 

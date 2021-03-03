@@ -567,13 +567,12 @@ def test_model_api_create_file(app_api, tmpdir):
     model = ".".join([app_api.app_label, model_name])
 
     model_properties = {
-        "id": {"title": "ID", "type": "integer", "readOnly": True},
+        "id": {"title": "ID", "type": "integer", "read_only": True},
         "text": {"title": "Text", "type": "string", "minLength": 1},
         "data_file": {
             "title": "Data File",
-            "type": "string",
-            "readOnly": True,
-            "format": "uri",
+            "type": "foreignkey",
+            "read_only": True,
         },
     }
     data_file_uri = urljoin(
@@ -619,7 +618,7 @@ def test_model_api_create_with_related(client):
     client.definitions["bulk_importer.examplefortesting"] = {"id": ""}
     client.definitions["bulk_importer.relatedexamplefortesting"] = {
         "id": "",
-        "parent": {"format": "uri"},
+        "parent": {"type": "foreignkey"},
     }
     # Create app
     app_data = {
@@ -1061,11 +1060,11 @@ def test_model_obj_property_duplication_regression(app_api):
     model_1 = ".".join([app_api.app_label, model_name_1])
     model_2 = ".".join([app_api.app_label, model_name_2])
     model_1_properties = {
-        "id": {"title": "ID", "type": "integer", "readOnly": True},
+        "id": {"title": "ID", "type": "integer", "read_only": True},
         "text": {"title": "Text", "type": "string", "minLength": 1},
     }
     model_2_properties = {
-        "id": {"title": "ID", "type": "integer", "readOnly": True},
+        "id": {"title": "ID", "type": "integer", "read_only": True},
         "name": {
             "title": "Name",
             "type": "string",
@@ -1130,16 +1129,16 @@ def test_model_obj_fk_property(app_api):
     updated_model = ".".join([app_api.app_label, updated_model_name])
 
     model_properties = {
-        "id": {"title": "ID", "type": "integer", "readOnly": True},
+        "id": {"title": "ID", "type": "integer", "read_only": True},
         "text": {"title": "Text", "type": "string", "minLength": 1},
-        "parent": {"title": "Parent", "type": "string", "format": "uri"},
+        "parent": {"title": "Parent", "type": "foreignkey"},
     }
     related_model_properties = {
-        "id": {"title": "ID", "type": "integer", "readOnly": True},
+        "id": {"title": "ID", "type": "integer", "read_only": True},
         "text": {"title": "Text", "type": "string", "minLength": 1},
     }
     updated_model_properties = {
-        "id": {"title": "ID", "type": "integer", "readOnly": True},
+        "id": {"title": "ID", "type": "integer", "read_only": True},
         "integer": {
             "title": "Integer",
             "type": "integer",
@@ -1227,13 +1226,12 @@ def test_model_obj_file_property(app_api):
     model = ".".join([app_api.app_label, model_name])
 
     model_properties = {
-        "id": {"title": "ID", "type": "integer", "readOnly": True},
+        "id": {"title": "ID", "type": "integer", "read_only": True},
         "text": {"title": "Text", "type": "string", "minLength": 1},
         "data_file": {
             "title": "Data File",
-            "type": "string",
-            "readOnly": True,
-            "format": "uri",
+            "type": "foreignkey",
+            "read_only": True,
         },
     }
     app_api.client.definitions[model] = model_properties

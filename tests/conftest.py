@@ -83,6 +83,21 @@ def client():
 
 
 @pytest.fixture
+def vcr_client():
+    """
+    Version of the client without anything mocked; use only in tests with
+    `@pytest.mark.vcr()`
+    """
+    with pytest.setenv(BULK_API_TOKEN="fake-token"):
+        client = reimport_env_client()
+
+    # unset this when recording new cassettes, then find-and-replace the
+    # token in the resulting cassette.
+    client.token = "fake-token"
+    return client
+
+
+@pytest.fixture
 def app_api(client):
     app_label = random_string().lower()
     data = {
@@ -108,7 +123,7 @@ def model_api(app_api):
     }
     model = ".".join([app_api.app_label, model_name])
     properties = {
-        "id": {"title": "ID", "type": "integer", "readOnly": True},
+        "id": {"title": "ID", "type": "integer", "read_only": True},
         "name": {
             "title": "Name",
             "type": "string",
@@ -146,13 +161,12 @@ def model_api_file(app_api):
     model = ".".join([app_api.app_label, model_name])
 
     model_properties = {
-        "id": {"title": "ID", "type": "integer", "readOnly": True},
+        "id": {"title": "ID", "type": "integer", "read_only": True},
         "text": {"title": "Text", "type": "string", "minLength": 1},
         "data_file": {
             "title": "Data File",
-            "type": "string",
-            "readOnly": True,
-            "format": "uri",
+            "type": "foreignkey",
+            "read_only": True,
         },
     }
     app_api.client.definitions[model] = {"properties": model_properties}
