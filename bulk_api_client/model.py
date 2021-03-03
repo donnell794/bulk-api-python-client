@@ -339,7 +339,7 @@ class ModelAPI(object):
             self.model_name
         ]
         uri = os.path.join(path, str(data["id"]))
-        return ModelObj.with_properties(self, uri=uri, data=data, path=path)
+        return ModelObj.with_properties(self, uri=uri, data=data)
 
     def _get(self, uri):
         """Gets a model object given it's primary key; Makes a 'GET' method
@@ -374,7 +374,7 @@ class ModelAPI(object):
         uri = os.path.join(path, str(pk))
         data = self._get(uri)
 
-        return ModelObj.with_properties(self, uri, data=data, path=path)
+        return ModelObj.with_properties(self, uri, data=data)
 
     def _update(self, uri, obj_data, patch=True):
         """Updates a model object given it's primary key and new object data;
@@ -456,11 +456,11 @@ def _get_f(field, properties):
 
     Args:
         field (str): ModelAPI its related to
-        properties (dict): uri of the resource
+        properties (dict): Model properties from the OPTIONS endpoint, in
+            {fieldname: {field definition metadata}} format
 
     Returns:
-
-
+        getter method
     """
 
     def get_f(cls):
@@ -490,10 +490,11 @@ def _set_f(field, properties):
 
     Args:
         field (str): ModelAPI its related to
-        properties (dict): uri of the resource
+        properties (dict): Model properties from the OPTIONS endpoint, in
+            {fieldname: {field definition metadata}} format
 
     Returns:
-
+        setter method
     """
 
     def set_f(cls, val):
@@ -515,7 +516,7 @@ class ModelObj:
     """
     **DO NOT CALL DIRECTLY**
     Base object which handles mapping local data to api actions. Must call the
-    with_properties class method funnction to get properties
+    with_properties class method function to get properties
 
     Args:
         model_api (obj): ModelAPI its related to
@@ -544,7 +545,7 @@ class ModelObj:
     data = property(get_data, set_data)
 
     @classmethod
-    def with_properties(cls, model_api, uri, data=None, path=None):
+    def with_properties(cls, model_api, uri, data=None):
         """
         Returns an object with proerties of the given model to be modified
         directly and reflected in the database. Mimics objects used by ORMs
@@ -553,7 +554,6 @@ class ModelObj:
             model_api (obj): ModelAPI its related to
             uri (str): uri of the resource
             data (dict): property which memoizes _data
-            path (str): uri to the resource collection, to obtain definitions
 
         Returns:
             ModelObjWithProperties obj
@@ -567,14 +567,7 @@ class ModelObj:
         class ModelObjWithProperties(cls):
             pass
 
-        model = ".".join([model_api.app.app_label, model_api.model_name])
-        if model not in model_api.app.client.definitions:
-            if path is None:  # deduce path from uri
-                path = "/".join(uri.split("/")[0:-1])
-            model_api.app.client.definitions[model] = ModelObj._get_definitions(
-                model_api, path
-            )
-        model_properties = model_api.app.client.definitions[model]["properties"]
+        model_properties = ModelObj._get_model_properties(model_api)
         for field, _ in model_properties.items():
             get_f = _get_f(field, model_properties)
             setattr(ModelObjWithProperties, "get_%s" % field, get_f)
@@ -593,13 +586,25 @@ class ModelObj:
         return ModelObjWithProperties(model_api, uri, data)
 
     @staticmethod
+    def _get_model_properties(model_api):
+        """
+        Retrieves and caches the properties for a given model, provided by
+        the model's api object.
+        """
+        model = ".".join([model_api.app.app_label, model_api.model_name])
+        if model not in model_api.app.client.definitions:
+            path = model_api.app.client.model_api_urls[model_api.app.app_label][
+                model_api.model_name
+            ]
+            model_api.app.client.definitions[model] = ModelObj._get_definitions(
+                model_api, path
+            )
+        return model_api.app.client.definitions[model]
+
+    @staticmethod
     def _get_definitions(model_api, path):
         response = model_api.app.client.request("OPTIONS", path, params={})
-        return {
-            "properties": ModelObj._metadata_to_field_properties(
-                response.json()
-            )
-        }
+        return ModelObj._metadata_to_field_properties(response.json())
 
     @staticmethod
     def _metadata_to_field_properties(metadata):

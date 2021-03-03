@@ -60,7 +60,11 @@ def client():
     token = random_string()
     url = "http://test.org/api/"
     Client.app_api_urls = None
-    Client.model_api_urls = {}
+    Client.model_api_urls = {
+        "bulk_importer": {
+            "examplefortesting": "/bulk/api/bulk_importer/examplefortesting"
+        }
+    }
     Client.app_api_cache = {}
     json_data = {
         "bulk_importer": "https://data-warehouse.pivot/bulk/api/bulk_importer/",
