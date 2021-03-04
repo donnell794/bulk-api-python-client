@@ -88,12 +88,11 @@ def vcr_client():
     Version of the client without anything mocked; use only in tests with
     `@pytest.mark.vcr()`
     """
+    # unset this when recording new cassettes, then find-and-replace the
+    # token in the resulting cassette.
     with pytest.setenv(BULK_API_TOKEN="fake-token"):
         client = reimport_env_client()
 
-    # unset this when recording new cassettes, then find-and-replace the
-    # token in the resulting cassette.
-    client.token = "fake-token"
     return client
 
 

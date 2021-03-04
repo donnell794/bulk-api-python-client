@@ -466,18 +466,24 @@ def _get_f(field, properties):
     def get_f(cls):
         field_val = cls.data.get(field)
         if properties[field].get("type") == "foreignkey":
-            if "api_download" in field_val:
-                response = cls.model_api.app.client.request(
-                    "GET", field_val, {}
-                )
-                return BytesIO(response.content)
-            elif hasattr(cls, "_%s" % field):
+            if hasattr(cls, "_%s" % field):
+                # The related object was set locally with set_f; return that
                 return getattr(cls, "_%s" % field)
+            # Create a ModelObj for the related object and return it
             path = field_val.replace(cls.model_api.app.client.api_url, "")
             app_label, model_name, _id = path.split("/")
             model = cls.model_api.app.client.app(app_label).model(model_name)
             related_obj = ModelObj.with_properties(model, field_val)
             return related_obj
+        elif (
+            properties[field].get("type") == "uri"
+            and "api_download" in field_val
+        ):
+            # This is a file available through the API; return the file
+            # instead of displaying the URI
+            response = cls.model_api.app.client.request("GET", field_val, {})
+            return BytesIO(response.content)
+
         return field_val
 
     return get_f

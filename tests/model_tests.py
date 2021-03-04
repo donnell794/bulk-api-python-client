@@ -1228,11 +1228,7 @@ def test_model_obj_file_property(app_api):
     model_properties = {
         "id": {"title": "ID", "type": "integer", "read_only": True},
         "text": {"title": "Text", "type": "string", "minLength": 1},
-        "data_file": {
-            "title": "Data File",
-            "type": "foreignkey",
-            "read_only": True,
-        },
+        "data_file": {"title": "Data File", "type": "uri", "read_only": True,},
     }
     app_api.client.definitions[model] = model_properties
     uri = urljoin(BASE_URL, "{}/{}/{}".format(app_api.app_label, model_name, 1))
